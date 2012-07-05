@@ -83,6 +83,9 @@ abstract class DrupalMigration extends DynamicMigration {
     if (!isset($arguments['group'])) {
       $arguments['group'] = MigrateGroup::getInstance('default');
     }
+    elseif (!is_object($arguments['group'])) {
+      $arguments['group'] = MigrateGroup::getInstance($arguments['group']);
+    }
     parent::__construct($arguments['group']);
     $this->sourceConnection = $arguments['source_connection'];
     if (!empty($arguments['source_database'])) {
