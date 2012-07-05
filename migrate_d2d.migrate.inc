@@ -13,6 +13,13 @@ abstract class DrupalMigration extends DynamicMigration {
   protected $sourceConnection;
 
   /**
+   * Database array, when we're defining the connection dynamically.
+   *
+   * @var array
+   */
+  protected $sourceDatabase = array();
+
+  /**
    * The major version of the Drupal install serving as the migration
    * source, e.g. '6'.
    *
@@ -78,6 +85,9 @@ abstract class DrupalMigration extends DynamicMigration {
     }
     parent::__construct($arguments['group']);
     $this->sourceConnection = $arguments['source_connection'];
+    if (!empty($arguments['source_database'])) {
+      Database::addConnectionInfo($this->sourceConnection, 'default', $arguments['source_database']);
+    }
     $this->sourceVersion = $arguments['source_version'];
     $this->description = $arguments['description'];
     if (!empty($arguments['dependencies'])) {
