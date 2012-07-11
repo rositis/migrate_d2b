@@ -12,13 +12,6 @@ class DrupalNode6Migration extends DrupalNodeMigration {
 
     // Basic CCK field suffixes
     $this->fieldSuffixes = array(
-      'computed' => 'value',
-      'date' => 'value',
-      'datestamp' => 'value',
-      'datetime' => 'value',
-      'number_decimal' => 'value',
-      'number_integer' => 'value',
-      'text' => 'value',
       'filefield' => 'fid', // @todo: Handle list and data suffixes
       'nodereference' => 'nid',
     );
@@ -104,8 +97,13 @@ class DrupalNode6Migration extends DrupalNodeMigration {
           ->schema()->tableExists($table)) {
         $table = 'content_type_' . $this->sourceType;
       }
-      if (isset($this->fieldSuffixes[$field_type])) {
-        $suffix = $this->fieldSuffixes[$field_type];
+      if ($field_type != 'taxonomy_term') {
+        if (isset($this->fieldSuffixes[$field_type])) {
+          $suffix = $this->fieldSuffixes[$field_type];
+        }
+        else {
+          $suffix = 'value';
+        }
         $field_field = $field_name .'_'. $suffix;
         $row->$field_name = Database::getConnection('default', $this->sourceConnection)
                             ->select($table, 'f')
@@ -124,14 +122,7 @@ class DrupalNode6Migration extends DrupalNodeMigration {
           $row->$field_name = $this->$method($row->$field_name);
         }
       }
-      else if ($field_type != 'taxonomy_term') {
-        // Only report once per field type
-        static $reported_field_types = array();
-        if (!isset($reported_field_types[$field_type])) {
-          Migration::displayMessage("No suffix for field_type=$field_type");
-          $reported_field_types[$field_type] = TRUE;
-        }
-      }
+
       if (!empty($field_name) && empty($row->$field_name)) {
         unset($row->$field_name);
       }

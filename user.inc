@@ -10,7 +10,7 @@ abstract class DrupalUserMigration extends DrupalMigration {
    */
   public function __construct(array $arguments) {
     parent::__construct($arguments);
-
+    $this->sourceFields += $this->sourceFieldList();
     // Create our three main objects - source, destination, and map
     $this->source = new MigrateSourceSQL($this->userQuery(), $this->sourceFields,
       NULL, $this->sourceOptions);
@@ -47,10 +47,20 @@ abstract class DrupalUserMigration extends DrupalMigration {
          ->callbacks(array($this, 'mapFormat'))
          ->description(t('We map D6 format numbers to D7 format machine names'));
 
-    $this->addUnmigratedDestinations(array('is_new'));
+    $this->addUnmigratedDestinations(array('is_new', 'role_names'));
 
-    $this->addFieldMapping('path', 'path')
-         ->description('Handled in prepareRow');
+    if (module_exists('path') && $this->moduleExists('path')) {
+      $this->addFieldMapping('path', 'path')
+           ->description('Handled in prepareRow');
+    }
+    else {
+      if (module_exists('path')) {
+        $this->addUnmigratedDestinations(array('path'));
+      }
+      elseif ($this->moduleExists('path')) {
+        $this->addUnmigratedSources(array('path'));
+      }
+    }
 
     if (module_exists('pathauto')) {
       $this->addFieldMapping('pathauto')
@@ -71,6 +81,30 @@ abstract class DrupalUserMigration extends DrupalMigration {
              ->fields('u')
              ->condition('uid', 1, '>');
     return $query;
+  }
+
+  /**
+   * Retrieves the available fields for this content type.
+   *
+   * @return array
+   */
+  public function sourceFieldList() {
+    migrate_instrument_start('DrupalUserMigration::sourceFieldList');
+    $fields = array();
+
+    $this->sourceFieldTypes = array();
+    $field_info = $this->versionSpecific->sourceFieldInfo('user', 'user');
+    foreach ($field_info as $field_name => $info) {
+      $fields[$field_name] = $info['label'];
+      $this->sourceFieldTypes[$field_name] = $info['type'];
+    }
+
+    if ($this->moduleExists('path')) {
+      $fields['path'] = t('Path alias');
+    }
+    migrate_instrument_stop('DrupalUserMigration::sourceFieldList');
+
+    return $fields;
   }
 
   /**
@@ -100,8 +134,7 @@ abstract class DrupalUserMigration extends DrupalMigration {
     }*/
 
     // Add the path to the source row, if relevant
-    // @TODO: Should check source side instead
-    if (module_exists('path')) {
+    if ($this->moduleExists('path')) {
       $path = $this->versionSpecific->getPath('user/' . $row->uid);
       if ($path) {
         $row->path = $path;

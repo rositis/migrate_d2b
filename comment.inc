@@ -38,7 +38,7 @@ abstract class DrupalCommentMigration extends DrupalMigration {
       $this->dependencies[] = $user_migration;
     }
     parent::__construct($arguments);
-
+    $this->sourceFields += $this->sourceFieldList();
     // Create our three main objects - source, destination, and map
 
     $this->source = new MigrateSourceSQL($this->commentQuery($this->sourceType),
@@ -89,6 +89,25 @@ abstract class DrupalCommentMigration extends DrupalMigration {
     }
   }
 
+  /**
+   * Retrieves the available fields for this content type.
+   *
+   * @return array
+   */
+  public function sourceFieldList() {
+    migrate_instrument_start('DrupalCommentMigration::sourceFieldList');
+    $fields = array();
+
+    $this->sourceFieldTypes = array();
+    $field_info = $this->versionSpecific->sourceFieldInfo('comment', $this->sourceType);
+    foreach ($field_info as $field_name => $info) {
+      $fields[$field_name] = $info['label'];
+      $this->sourceFieldTypes[$field_name] = $info['type'];
+    }
+    migrate_instrument_stop('DrupalCommentMigration::sourceFieldList');
+
+    return $fields;
+  }
   /**
    * In D7, comments are entities, and need to be handled as in
    * migrate_d2d/node.inc::prepareRow()

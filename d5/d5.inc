@@ -54,4 +54,40 @@ class DrupalVersion5 implements DrupalVersionInterface {
     migrate_instrument_stop('DrupalVersion5::getPath');
     return $path;
   }
+
+
+  public function sourceFieldInfo($entity_type, $bundle) {
+    migrate_instrument_start('DrupalVersion5::sourceFieldInfo');
+    $fields = array();
+    if ($entity_type != 'node') {
+      return $fields;
+    }
+    // Get each CCK field attached to this type.
+    if (Database::getConnection('default', $this->arguments['source_connection'])
+          ->schema()->tableExists('content_node_field_instance')) {
+      $query = Database::getConnection('default', $this->arguments['source_connection'])
+               ->select('content_node_field_instance', 'i')
+               ->fields('i', array('label'))
+               ->condition('i.type_name', $bundle);
+      $query->innerJoin('content_node_field', 'f', 'i.field_name = f.field_name');
+      $query->fields('f', array('field_name', 'type'));
+      $result = $query->execute();
+      foreach ($result as $row) {
+        $fields[trim($row->field_name)] = array('label' => $row->label, 'type' => $row->type);
+      }
+    }
+    // Get each vocabulary attached to this type.
+    $query = Database::getConnection('default', $this->arguments['source_connection'])
+             ->select('vocabulary_node_types', 'vnt')
+             ->fields('vnt', array('vid'));
+    $query->innerJoin('vocabulary', 'v', 'vnt.vid=v.vid');
+    $query->addField('v', 'name');
+    $query->condition('vnt.type', $bundle);
+    $result = $query->execute();
+    foreach ($result as $row) {
+      $fields[$row->vid] = array('label' => $row->name, 'type' => 'taxonomy_term');
+    }
+    migrate_instrument_stop('DrupalVersion5::sourceFieldInfo');
+    return $fields;
+  }
 }

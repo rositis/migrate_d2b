@@ -33,6 +33,7 @@ abstract class DrupalMigration extends DynamicMigration {
    * @var array
    */
   protected $sourceOptions = array();
+
   /**
    * Derived classes may add source field definitions before calling their
    * parent constructor.
@@ -40,6 +41,13 @@ abstract class DrupalMigration extends DynamicMigration {
    * @var array
    */
   protected $sourceFields = array();
+
+  /**
+   * List of fields and their types.
+   *
+   * @var array
+   */
+  protected $sourceFieldTypes = array();
 
   /**
    * While much of the version-specific work can be done in the leaf classes,
@@ -70,16 +78,26 @@ abstract class DrupalMigration extends DynamicMigration {
    *
    * Optional arguments:
    *
+   * source_database - Array describing the source connection, to be defined in
+   *  the constructor. If absent, the source connection is assumed to be established
+   *  elsewhere (typically settings.php).
+   * group - Migration group to add this migration to.
    * dependencies - Array of migrations that must be run before this one.
    * soft_dependencies - Array of migrations that should be listed before this one.
    * format_mappings - Array keyed by source format IDs or machine names, with
    *  the values being the corresponding D7 machine name. If unspecified,
-   * source_options - Array to be passed as options to source constructors.
+   * source_options - Array to be passed as options to source constructors,
+   *  overriding the defaults (map_joinable FALSE, cache_counts TRUE, cache_key
+   *  derived from the machine name).
    *
    * @param array $arguments
    */
   public function __construct($arguments) {
     $this->arguments = $arguments;
+    $this->sourceVersion = $arguments['source_version'];
+    // Handle shared version-specific stuff
+    $version_class = 'DrupalVersion' . $this->sourceVersion;
+    $this->versionSpecific = new $version_class($arguments);
     if (!isset($arguments['group'])) {
       $arguments['group'] = MigrateGroup::getInstance('default');
     }
@@ -91,7 +109,7 @@ abstract class DrupalMigration extends DynamicMigration {
     if (!empty($arguments['source_database'])) {
       Database::addConnectionInfo($this->sourceConnection, 'default', $arguments['source_database']);
     }
-    $this->sourceVersion = $arguments['source_version'];
+
     $this->description = $arguments['description'];
     if (!empty($arguments['dependencies'])) {
       $this->dependencies = $arguments['dependencies'];
@@ -106,15 +124,12 @@ abstract class DrupalMigration extends DynamicMigration {
                                          $arguments['source_options']);
     }
 
-    // Handle shared version-specific stuff
-    $version_class = 'DrupalVersion' . $this->sourceVersion;
-    $this->versionSpecific = new $version_class($arguments);
-
     if (!empty($arguments['format_mappings'])) {
       $this->formatMappings = $arguments['format_mappings'];
     } else {
       $this->formatMappings = $this->versionSpecific->getDefaultFormatMappings();
     }
+
   }
 
   /**
@@ -137,6 +152,25 @@ abstract class DrupalMigration extends DynamicMigration {
     } else {
       return NULL;
     }
+  }
+
+  /**
+   * Check to see if a given module is enabled in the source installation.
+   *
+   * @param $module
+   *  Name of module to check.
+   * @return boolean
+   *  1 if it is enabled, 0 if not.
+   */
+  protected function moduleExists($module) {
+    $exists = Database::getConnection('default', $this->sourceConnection)
+              ->select('system', 's')
+              ->fields('s', array('status'))
+              ->condition('name', $module)
+              ->condition('type', 'module')
+              ->execute()
+              ->fetchField();
+    return $exists;
   }
 }
 
@@ -170,6 +204,23 @@ interface DrupalVersionInterface {
    * @param $id
    */
   public function getPath($source);
+
+  /**
+   * @abstract
+   * Return the types and labels of all custom fields (CCK pre-D7, core fields
+   * D7 and later) attached to the given entity type and bundle.
+   *
+   * @param $entity_type
+   *  Type of entity ('node', 'user', etc.) for which to retrieve field info.
+   * @param $bundle
+   *  Bundle within the entity type (e.g., 'article', 'blog', etc.).
+   *
+   * @return mixed
+   *  An array keyed by field name, consisting of arrays structured thus:
+   *    'label' => User-facing field name, for display
+   *    'type' => Machine name of the field type.
+   */
+  public function sourceFieldInfo($entity_type, $bundle);
 }
 
 /**

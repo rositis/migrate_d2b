@@ -19,8 +19,7 @@
  */
 abstract class DrupalNodeMigration extends DrupalMigration {
   /**
-   * The source and destination content (node) types we're dealing with and the
-   * full mapping of all source and destination content types.
+   * The source and destination content types (bundles) we're dealing with.
    */
   protected $sourceType;
   protected $destinationType;
@@ -48,14 +47,6 @@ abstract class DrupalNodeMigration extends DrupalMigration {
   abstract protected function nodeQuery();
 
   /**
-   * @abstract
-   * Version-specific classes must implement sourceFieldList, returning an array
-   * of field information retrieved from CCK (or whatever), keyed by field
-   * machine name with the field label as the value.
-   */
-  abstract protected function sourceFieldList();
-
-  /**
    * @param array $arguments
    */
   public function __construct(array $arguments) {
@@ -66,13 +57,13 @@ abstract class DrupalNodeMigration extends DrupalMigration {
       $this->dependencies[] = $user_migration;
     }
     parent::__construct($arguments);
-
-    $fields = $this->sourceFieldList();
-    $fields['path'] = t('Node: Path alias');
+    $this->sourceFields += $this->sourceFieldList();
+    // @todo: Should be conditional
+    $this->sourceFields['path'] = t('Node: Path alias');
 
     // Create our three main objects - source, destination, and map
 
-    $this->source = new MigrateSourceSQL($this->nodeQuery(), $fields, NULL,
+    $this->source = new MigrateSourceSQL($this->nodeQuery(), $this->sourceFields, NULL,
       $this->sourceOptions);
 
     $this->destination = new MigrateDestinationNode($this->destinationType);
@@ -129,6 +120,26 @@ abstract class DrupalNodeMigration extends DrupalMigration {
   }
 
   /**
+   * Retrieves the available fields for this content type.
+   *
+   * @return array
+   */
+  public function sourceFieldList() {
+    migrate_instrument_start('DrupalNodeMigration::sourceFieldList');
+    $fields = array();
+
+    $this->sourceFieldTypes = array();
+    $field_info = $this->versionSpecific->sourceFieldInfo('node', $this->sourceType);
+    foreach ($field_info as $field_name => $info) {
+      $fields[$field_name] = $info['label'];
+      $this->sourceFieldTypes[$field_name] = $info['type'];
+    }
+    migrate_instrument_stop('DrupalNodeMigration::sourceFieldList');
+
+    return $fields;
+  }
+
+  /**
    * Called after the query data is fetched - we'll use this to populate the
    * source row with the CCK fields.
    */
@@ -146,8 +157,7 @@ abstract class DrupalNodeMigration extends DrupalMigration {
     }
 
     // Add the path to the source row, if relevant
-    // @TODO: Should check source side instead
-    if (module_exists('path')) {
+    if ($this->moduleExists('path')) {
       $path = $this->versionSpecific->getPath('node/' . $row->nid);
       if ($path) {
         $row->path = $path;
