@@ -68,6 +68,16 @@ class DrupalPicture6Migration extends DrupalFile6Migration {
     );
     // No appropriate timestamp to save, so let it default.
     $this->addFieldMapping('timestamp', NULL, FALSE);
+
+    // Not mapped directly, just used for highwater
+    $this->addUnmigratedSources(array('access'));
+
+    // Clear references to normal file source fields
+    $this->removeFieldMapping(NULL, 'filename');
+    $this->removeFieldMapping(NULL, 'filemime');
+    $this->removeFieldMapping(NULL, 'filesize');
+    $this->removeFieldMapping(NULL, 'status');
+    $this->removeFieldMapping(NULL, 'type');
   }
 
   /**
@@ -80,7 +90,6 @@ class DrupalPicture6Migration extends DrupalFile6Migration {
              ->select('users', 'f')
              ->condition('picture', '', '<>')
              ->orderBy('access');
-    $query->addField('f', 'uid');
     $query->addField('f', 'access');
     // Return the field name the file migration expects.
     $query->addField('f', 'picture', 'filepath');
