@@ -24,20 +24,24 @@ abstract class DrupalFileMigration extends DrupalMigration {
     if (!empty($arguments['user_migration'])) {
        $user_migration = $arguments['user_migration'];
        $this->dependencies[] = $user_migration;
-     }
+    }
 
-    $this->map = new MigrateSQLMap($this->machineName,
-      array(
-        'fid' => array(
-          'type' => 'int',
-          'unsigned' => TRUE,
-          'not null' => TRUE,
-          'description' => 'Source file ID',
-          'alias' => 'f',
+    // Allow derived classes to override this definition by setting it before
+    // calling their parent constructor
+    if (!isset($this->map)) {
+      $this->map = new MigrateSQLMap($this->machineName,
+        array(
+          'fid' => array(
+            'type' => 'int',
+            'unsigned' => TRUE,
+            'not null' => TRUE,
+            'description' => 'Source file ID',
+            'alias' => 'f',
+          ),
         ),
-      ),
-      MigrateDestinationFile::getKeySchema()
-    );
+        MigrateDestinationFile::getKeySchema()
+      );
+    }
     $this->source = new MigrateSourceSQL($this->fileQuery(),
       $this->sourceFields, NULL, $this->sourceOptions);
 

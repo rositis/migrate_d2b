@@ -5,11 +5,19 @@
  * supported source Drupal versions.
  */
 abstract class DrupalUserMigration extends DrupalMigration {
+  protected $pictureMigration = '';
+
   /**
    * @param array $arguments
+   * picture_migration - Machine name of a picture migration, used to establish
+   *   dependencies and a sourceMigration for the picture mapping.
    */
   public function __construct(array $arguments) {
     parent::__construct($arguments);
+    if (!empty($arguments['picture_migration'])) {
+      $this->pictureMigration = $arguments['picture_migration'];
+      $this->dependencies[] = $this->pictureMigration;
+    }
     $this->sourceFields += $this->sourceFieldList();
     // Create our three main objects - source, destination, and map
     $this->source = new MigrateSourceSQL($this->userQuery(), $this->sourceFields,
@@ -37,9 +45,13 @@ abstract class DrupalUserMigration extends DrupalMigration {
     // Dedupe username collisions by appending _1, _2, etc.
     $this->addFieldMapping('name', 'name')
          ->dedupe('users', 'name');
-    $this->addFieldMapping('picture', 'picture')
-         ->description(t('TODO: map picture fids'))
-         ->issuePriority(MigrateFieldMapping::ISSUE_PRIORITY_MEDIUM);
+    if (isset($this->pictureMigration)) {
+      $this->addFieldMapping('picture', 'picture')
+           ->sourceMigration($this->pictureMigration);
+    }
+    else {
+      $this->addFieldMapping('picture', 'picture');
+    }
     $this->addFieldMapping('roles')
          ->description(t('TODO: handle roles automatically'))
          ->issuePriority(MigrateFieldMapping::ISSUE_PRIORITY_MEDIUM);
@@ -162,6 +174,15 @@ abstract class DrupalUserMigration extends DrupalMigration {
         migrate_instrument_start('path_save');
         path_save($path);
         migrate_instrument_stop('path_save');
+      }
+    }
+    // If we've migrated a picture, update its ownership
+    if (isset($this->pictureMigration)) {
+      if ($account->picture) {
+        db_update('file_managed')
+          ->fields(array('uid' => $account->uid))
+          ->condition('fid', $account->picture)
+          ->execute();
       }
     }
   }
