@@ -44,17 +44,22 @@ class DrupalVersion5 implements DrupalVersionInterface {
    * @return string
    */
   public function getPath($source) {
-    migrate_instrument_start('DrupalVersion5::getPath');
-    $path = Database::getConnection('default', $this->arguments['source_connection'])
-                  ->select('url_alias', 'ua')
-                  ->fields('ua', array('dst'))
-                  ->condition('src', $source)
-                  ->execute()
-                  ->fetchField();
-    migrate_instrument_stop('DrupalVersion5::getPath');
+    migrate_instrument_start('DrupalVersion6::getPath');
+    if (Database::getConnection('default', $this->arguments['source_connection'])
+          ->schema()->tableExists('url_alias')) {
+      $path = Database::getConnection('default', $this->arguments['source_connection'])
+                    ->select('url_alias', 'ua')
+                    ->fields('ua', array('dst'))
+                    ->condition('src', $source)
+                    ->execute()
+                    ->fetchField();
+    }
+    else {
+      $path = $source;
+    }
+    migrate_instrument_stop('DrupalVersion6::getPath');
     return $path;
   }
-
 
   public function sourceFieldInfo($entity_type, $bundle) {
     migrate_instrument_start('DrupalVersion5::sourceFieldInfo');

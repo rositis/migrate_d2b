@@ -23,12 +23,18 @@ class DrupalVersion7 implements DrupalVersionInterface {
   }
 
   public function getPath($source) {
-    $path = Database::getConnection('default', $this->arguments['source_connection'])
-                  ->select('url_alias', 'ua')
-                  ->fields('ua', array('alias'))
-                  ->condition('source', $source)
-                  ->execute()
-                  ->fetchField();
+    if (Database::getConnection('default', $this->arguments['source_connection'])
+          ->schema()->tableExists('url_alias')) {
+      $path = Database::getConnection('default', $this->arguments['source_connection'])
+                    ->select('url_alias', 'ua')
+                    ->fields('ua', array('alias'))
+                    ->condition('source', $source)
+                    ->execute()
+                    ->fetchField();
+    }
+    else {
+      $path = $source;
+    }
     return $path;
   }
 

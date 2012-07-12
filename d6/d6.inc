@@ -45,12 +45,18 @@ class DrupalVersion6 implements DrupalVersionInterface {
    */
   public function getPath($source) {
     migrate_instrument_start('DrupalVersion6::getPath');
-    $path = Database::getConnection('default', $this->arguments['source_connection'])
-                  ->select('url_alias', 'ua')
-                  ->fields('ua', array('dst'))
-                  ->condition('src', $source)
-                  ->execute()
-                  ->fetchField();
+    if (Database::getConnection('default', $this->arguments['source_connection'])
+          ->schema()->tableExists('url_alias')) {
+      $path = Database::getConnection('default', $this->arguments['source_connection'])
+                    ->select('url_alias', 'ua')
+                    ->fields('ua', array('dst'))
+                    ->condition('src', $source)
+                    ->execute()
+                    ->fetchField();
+    }
+    else {
+      $path = $source;
+    }
     migrate_instrument_stop('DrupalVersion6::getPath');
     return $path;
   }
