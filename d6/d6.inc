@@ -62,11 +62,14 @@ class DrupalVersion6 implements DrupalVersionInterface {
   }
 
   public function sourceFieldInfo($entity_type, $bundle) {
+    if ($entity_type == 'user') {
+      return $this->profileFields();
+    }
+    elseif ($entity_type != 'node') {
+      return array();
+    }
     migrate_instrument_start('DrupalVersion6::sourceFieldInfo');
     $fields = array();
-    if ($entity_type != 'node') {
-      return $fields;
-    }
     // Get each CCK field attached to this type.
     if (Database::getConnection('default', $this->arguments['source_connection'])
           ->schema()->tableExists('content_node_field_instance')) {
@@ -93,6 +96,44 @@ class DrupalVersion6 implements DrupalVersionInterface {
       $fields[$row->vid] = array('label' => $row->name, 'type' => 'taxonomy_term');
     }
     migrate_instrument_stop('DrupalVersion6::sourceFieldInfo');
+    return $fields;
+  }
+
+  /**
+   * Retrieve any user profile fields from the core profile module or
+   * content_profile.
+   *
+   * @return array
+   */
+  protected function profileFields() {
+    migrate_instrument_start('DrupalVersion6::userFields');
+    $fields = array();
+    // Check the core profile...
+    if (Database::getConnection('default', $this->arguments['source_connection'])
+          ->schema()->tableExists('profile_fields')) {
+      $query = Database::getConnection('default', $this->arguments['source_connection'])
+               ->select('profile_fields', 'f')
+               ->fields('f', array('title', 'name', 'type'));
+      $result = $query->execute();
+      foreach ($result as $row) {
+        $fields[trim($row->name)] = array('label' => $row->title, 'type' => $row->type);
+      }
+    }
+    // ... then any content_profile node types. A variable named content_profile_use_foo
+    // with a serialized value of 1 means foo is a node type of interest.
+    migrate_instrument_stop('DrupalVersion6::userFields');
+    $names = Database::getConnection('default', $this->arguments['source_connection'])
+             ->select('variable', 'v')
+             ->fields('v', array('name'))
+             ->condition('name', 'content_profile_use_%', 'LIKE')
+             ->condition('value', 'i:1;')
+             ->execute()
+             ->fetchCol();
+    $index = strlen('content_profile_use_');
+    foreach ($names as $name) {
+      $type_name = substr($name, $index);
+      $fields += $this->sourceFieldInfo('node', $type_name);
+    }
     return $fields;
   }
 }
