@@ -13,7 +13,7 @@ abstract class DrupalMenuMigration extends DrupalMigration {
     parent::__construct($arguments);
 
     // Create our three main objects - source, destination, and map
-    $this->source = new MigrateSourceSQL($this->menuQuery(), $this->sourceFields,
+    $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields,
       NULL, $this->sourceOptions);
 
     $this->destination = new MigrateDestinationMenu();
@@ -36,11 +36,4 @@ abstract class DrupalMenuMigration extends DrupalMigration {
     // @todo: Does this for D5 as well, or should we move this to d6/menu.inc?
     $this->addSimpleMappings(array('menu_name', 'title', 'description'));
   }
-
-  /**
-   * @abstract
-   * Version-specific classes must implement menuQuery, returning a query that
-   * provides all the basic fields for each menu.
-   */
-  abstract protected function menuQuery();
 }

@@ -1,14 +1,14 @@
 <?php
 
-
 class DrupalTerm7Migration extends DrupalTermMigration {
   public function __construct(array $arguments) {
     parent::__construct($arguments);
-    // @todo: Support translation of formats
-    $this->addFieldMapping('format', 'format');
+
+    $this->addFieldMapping('format', 'format')
+         ->callbacks(array($this, 'mapFormat'));
   }
 
-  protected function termQuery() {
+  protected function query() {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('taxonomy_term_data', 'td')
              ->fields('td', array('tid', 'name', 'description', 'weight', 'format'))
@@ -17,7 +17,22 @@ class DrupalTerm7Migration extends DrupalTermMigration {
     $query->leftJoin('taxonomy_term_hierarchy', 'th', 'td.tid=th.tid');
     $query->fields('th', array('parent'));
     $query->innerJoin('taxonomy_vocabulary', 'v', 'td.vid=v.vid');
-    $query->condition('v.machine_name', $this->sourceVocabulary, 'IN');
+    $query->condition('v.machine_name', array($this->sourceVocabulary), 'IN');
     return $query;
+  }
+
+  /**
+   * Review a data row after fetch, returning FALSE to skip it.
+   *
+   * @param $row
+   * @return bool
+   */
+  public function prepareRow($row) {
+    if (parent::prepareRow($row) === FALSE) {
+      return FALSE;
+    }
+
+    $this->version->getSourceValues($row, $row->tid);
+    return TRUE;
   }
 }

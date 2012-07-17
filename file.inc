@@ -25,7 +25,7 @@ abstract class DrupalFileMigration extends DrupalMigration {
        $user_migration = $arguments['user_migration'];
        $this->dependencies[] = $user_migration;
     }
-
+    $this->sourceFields += $this->version->getSourceFields('file', 'file');
     // Allow derived classes to override this definition by setting it before
     // calling their parent constructor
     if (!isset($this->map)) {
@@ -42,7 +42,7 @@ abstract class DrupalFileMigration extends DrupalMigration {
         MigrateDestinationFile::getKeySchema()
       );
     }
-    $this->source = new MigrateSourceSQL($this->fileQuery(),
+    $this->source = new MigrateSourceSQL($this->query(),
       $this->sourceFields, NULL, $this->sourceOptions);
 
     $this->destination = new MigrateDestinationFile();

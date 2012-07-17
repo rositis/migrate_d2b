@@ -13,13 +13,6 @@ abstract class DrupalMigration extends DynamicMigration {
   protected $sourceConnection;
 
   /**
-   * Database array, when we're defining the connection dynamically.
-   *
-   * @var array
-   */
-  protected $sourceDatabase = array();
-
-  /**
    * The major version of the Drupal install serving as the migration
    * source, e.g. '6'.
    *
@@ -35,28 +28,29 @@ abstract class DrupalMigration extends DynamicMigration {
   protected $sourceOptions = array();
 
   /**
-   * Derived classes may add source field definitions before calling their
-   * parent constructor.
+   * An array of available source fields, beyond those in the base query.
+   * Derived classes should populate this before calling the parent
+   * constructor.
    *
    * @var array
    */
   protected $sourceFields = array();
 
   /**
-   * List of fields and their types.
+   * Source type (bundle), if any.
    *
-   * @var array
+   * @var string
    */
-  protected $sourceFieldTypes = array();
+  protected $sourceType = '';
 
   /**
    * While much of the version-specific work can be done in the leaf classes,
    * to share data and behavior among all classes for a given Drupal version
    * we use this helper object.
    *
-   * @var DrupalVersionInterface
+   * @var DrupalVersion
    */
-  protected $versionSpecific;
+  protected $version;
 
   /**
    * Map format mappings from the source system to the destination. Automated
@@ -95,9 +89,8 @@ abstract class DrupalMigration extends DynamicMigration {
   public function __construct($arguments) {
     $this->arguments = $arguments;
     $this->sourceVersion = $arguments['source_version'];
-    // Handle shared version-specific stuff
     $version_class = 'DrupalVersion' . $this->sourceVersion;
-    $this->versionSpecific = new $version_class($arguments);
+    $this->version = new $version_class($arguments);
     if (!isset($arguments['group'])) {
       $arguments['group'] = MigrateGroup::getInstance('default');
     }
@@ -109,7 +102,9 @@ abstract class DrupalMigration extends DynamicMigration {
     if (!empty($arguments['source_database'])) {
       Database::addConnectionInfo($this->sourceConnection, 'default', $arguments['source_database']);
     }
-
+    if (!empty($arguments['source_type'])) {
+      $this->sourceType = $arguments['source_type'];
+    }
     $this->description = $arguments['description'];
     if (!empty($arguments['dependencies'])) {
       $this->dependencies = $arguments['dependencies'];
@@ -127,9 +122,8 @@ abstract class DrupalMigration extends DynamicMigration {
     if (!empty($arguments['format_mappings'])) {
       $this->formatMappings = $arguments['format_mappings'];
     } else {
-      $this->formatMappings = $this->versionSpecific->getDefaultFormatMappings();
+      $this->formatMappings = $this->version->getDefaultFormatMappings();
     }
-
   }
 
   /**
@@ -140,6 +134,14 @@ abstract class DrupalMigration extends DynamicMigration {
   }
 
   /**
+   * @abstract
+   * The base source query for this migration.
+   *
+   * @return QueryConditionInterface
+   */
+  abstract protected function query();
+
+  /**
    * Field mapping callback: translate an incoming format ID (through D6) or
    * machine name (D7+) to a D7 format machine name.
    *
@@ -147,15 +149,23 @@ abstract class DrupalMigration extends DynamicMigration {
    * @return string
    */
   protected function mapFormat($format) {
-    if (isset($this->formatMappings[$format])) {
-      return $this->formatMappings[$format];
-    } else {
-      return NULL;
+    if (!is_array($format)) {
+      $format = array($format);
     }
+    $result = array();
+    foreach ($format as $format_value) {
+      if (!empty($format_value) && !empty($this->formatMappings[$format_value])) {
+        $result[] = $this->formatMappings[$format_value];
+      } else {
+        $result[] =  NULL;
+      }
+    }
+    return $result;
   }
 
   /**
    * Check to see if a given module is enabled in the source installation.
+   * @todo: move to DrupalVersion?
    *
    * @param $module
    *  Name of module to check.
@@ -170,30 +180,73 @@ abstract class DrupalMigration extends DynamicMigration {
               ->condition('type', 'module')
               ->execute()
               ->fetchField();
+    // Convert NULL to 0
+    if (!$exists) {
+      $exists = 0;
+    }
     return $exists;
   }
 }
 
 /**
- * There should be an implementation of this interface, named
+ * There should be an implementation of this abstract class, named
  * DrupalVersion{version #}, for each Drupal version supported as a source. It
  * will implement any functions needed by multiple version-specific classes
  * (e.g., nodes as well as users).
  */
-interface DrupalVersionInterface {
+abstract class DrupalVersion {
+  /**
+   * Arguments for the containing migration. Primarily of interest for
+   * the source_connection.
+   *
+   * @var array
+   */
+  protected $arguments;
+
+  /**
+   * An array of information on CCK/core fields.
+   *
+   * @var array
+   *  key - field -name
+   *  value - array of information:
+   *    label: User-visible description of the field
+   *    type: type of the field
+   *    columns: array of database columns for the field
+   */
+  protected $sourceFieldInfo = array();
+  public function getSourceFieldInfo() {
+    return $this->sourceFieldInfo;
+  }
+
+  /**
+   * The entity type (node, user, etc.)
+   *
+   * @var string
+   */
+  protected $entityType;
+
+  /**
+   * The bundle (node type pre-D7) - article, blog, etc.
+   *
+   * @var string
+   */
+  protected $bundle;
+
   /**
    * Pass the migration class arguments through to the version class.
    *
    * @param $arguments
    */
-  public function __construct($arguments);
+  public function __construct($arguments) {
+    $this->arguments = $arguments;
+  }
 
   /**
    * @abstract
    * Returns an array keyed by the source system's format identifier (integer ID
    * or machine name), with the destination Drupal 7 machine name as the value.
    */
-  public function getDefaultFormatMappings();
+  abstract public function getDefaultFormatMappings();
 
   /**
    * @abstract
@@ -203,11 +256,11 @@ interface DrupalVersionInterface {
    * @param $pattern
    * @param $id
    */
-  public function getPath($source);
+  abstract public function getPath($source);
 
   /**
    * @abstract
-   * Return the types and labels of all custom fields (CCK pre-D7, core fields
+   * Return the names and labels of all custom fields (CCK pre-D7, core fields
    * D7 and later) attached to the given entity type and bundle.
    *
    * @param $entity_type
@@ -215,12 +268,39 @@ interface DrupalVersionInterface {
    * @param $bundle
    *  Bundle within the entity type (e.g., 'article', 'blog', etc.).
    *
-   * @return mixed
-   *  An array keyed by field name, consisting of arrays structured thus:
-   *    'label' => User-facing field name, for display
-   *    'type' => Machine name of the field type.
+   * @return array
+   *  An array keyed by field name, with field labels as the values.
    */
-  public function sourceFieldInfo($entity_type, $bundle);
+  public function getSourceFields($entity_type, $bundle) {
+    $this->populateSourceFieldInfo($entity_type, $bundle);
+    $fields = array();
+    foreach ($this->sourceFieldInfo as $field_name => $info) {
+      $fields[$field_name] = $info['label'];
+      $i = 0;
+      if (isset($info['columns'])) {
+        foreach ($info['columns'] as $column_name) {
+          // We skip the first column, which we've covered with the field name
+          // itself.
+          if ($i > 0) {
+            $fields[$column_name] = t('!label subfield', array('!label' => $info['label']));
+          }
+          $i++;
+        }
+      }
+    }
+    return $fields;
+  }
+
+  /**
+   * @abstract
+   * Add CCK/core field values to the source row.
+   *
+   * @param $row
+   * @param $entity_id
+   *
+   * @return array
+   */
+  abstract public function getSourceValues($row, $entity_id);
 }
 
 /**

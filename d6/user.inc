@@ -31,10 +31,10 @@ class DrupalUser6Migration extends DrupalUserMigration {
     }
 
     /**
-     * Timezones need some runtime massaging when going from D6 to D7. Note that
-     * the date module adds a timezone_name column to the users table, so if
-     * present we can use that directly. Otherwise, we do as the D6->D7 upgrade
-     * does and just clear it - let users reset their timezones in the D7 site.
+     * Note that the date module adds a timezone_name column to the users table,
+     * so if present we can use that directly. Otherwise, we do as the D6->D7
+     * upgrade does and just clear it - let users reset their timezones in the
+     * D7 site.
      */
     if (!empty($row->timezone_name)) {
       $row->timezone = $row->timezone_name;

@@ -12,11 +12,11 @@ class DrupalTerm6Migration extends DrupalTermMigration {
   }
 
   /**
-   * Implementation of DrupalTermMigration::termQuery().
+   * Implementation of DrupalTermMigration::query().
    *
    * @return SelectQueryInterface
    */
-  protected function termQuery() {
+  protected function query() {
     // Note the explode - this supports the (admittedly unusual) case of
     // consolidating multiple vocabularies into one.
     $query = Database::getConnection('default', $this->sourceConnection)

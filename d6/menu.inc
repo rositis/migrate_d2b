@@ -18,7 +18,7 @@ class DrupalMenu6Migration extends DrupalMenuMigration {
    *
    * @return QueryConditionInterface
    */
-  protected function menuQuery() {
+  protected function query() {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('menu_custom', 'm')
              ->fields('m');

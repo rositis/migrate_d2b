@@ -22,7 +22,7 @@ class DrupalFile7Migration extends DrupalFileMigration {
       ->callbacks(array($this, 'fixUri'));
   }
 
-  protected function fileQuery() {
+  protected function query() {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('file_managed', 'f')
              ->fields('f')
@@ -32,6 +32,18 @@ class DrupalFile7Migration extends DrupalFileMigration {
       $query->isNull('u.uid');
     }
     return $query;
+  }
+
+  /**
+   * Called after the query data is fetched - we'll use this to populate the
+   * source row with the CCK fields.
+   */
+  public function prepareRow($row) {
+    if (parent::prepareRow($row) === FALSE) {
+      return FALSE;
+    }
+
+    $this->version->getSourceValues($row, $row->fid);
   }
 
   protected function fixUri($uri) {
@@ -59,8 +71,8 @@ class DrupalPicture7Migration extends DrupalFile7Migration {
    *
    * @return SelectQueryInterface
    */
-  protected function fileQuery() {
-    $query = parent::fileQuery();
+  protected function query() {
+    $query = parent::query();
     $query->innerJoin('users', 'u', 'f.fid=u.picture');
     return $query;
   }

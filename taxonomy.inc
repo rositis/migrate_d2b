@@ -20,12 +20,6 @@ abstract class DrupalTermMigration extends DrupalMigration {
    */
   protected $destinationVocabulary;
 
-  /**
-   * The version-specific class must implement termQuery(), returning
-   * a query object to obtain the term data for the specified source vocabulary.
-   * The query should sort by parent, to make sure root terms are created first.
-   */
-  abstract protected function termQuery();
 
   /**
    * In addition to the arguments supported by DrupalMigration, we add the
@@ -42,10 +36,14 @@ abstract class DrupalTermMigration extends DrupalMigration {
     parent::__construct($arguments);
     $this->sourceVocabulary = $arguments['source_vocabulary'];
     $this->destinationVocabulary = $arguments['destination_vocabulary'];
-    $this->sourceFields += $this->sourceFieldList();
+    $this->sourceFields += $this->version->getSourceFields(
+      'taxonomy_term', $this->sourceVocabulary);
+    if ($this->moduleExists('path')) {
+      $this->sourceFields['path'] = array('label' => t('Node: Path alias'));
+    }
 
     // Create our three main objects - source, destination, and map
-    $this->source = new MigrateSourceSQL($this->termQuery(), $this->sourceFields,
+    $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields,
       NULL, $this->sourceOptions);
 
     $this->destination = new MigrateDestinationTerm($this->destinationVocabulary);
@@ -66,29 +64,38 @@ abstract class DrupalTermMigration extends DrupalMigration {
     $this->addFieldMapping('parent', 'parent')
          ->sourceMigration($this->machineName);
 
-    // TODO: Handle path automatically like users and nodes
-    $this->addUnmigratedDestinations(array('parent_name', 'path'));
+    $this->addUnmigratedDestinations(array('parent_name'));
 
-    // TODO: Support custom fields
+    if ($this->moduleExists('path')) {
+      $this->addFieldMapping('path', 'path')
+           ->description('Handled in prepareRow');
+    }
+
+    if (module_exists('pathauto')) {
+      $this->addFieldMapping('pathauto')
+           ->description('By default, disable in favor of migrated paths')
+           ->defaultValue(0);
+    }
   }
 
   /**
-   * Retrieves the available fields for this content type.
+   * Review a data row after fetch, returning FALSE to skip it.
    *
-   * @return array
+   * @param $row
+   * @return bool
    */
-  public function sourceFieldList() {
-    migrate_instrument_start('DrupalTermMigration::sourceFieldList');
-    $fields = array();
-
-    $this->sourceFieldTypes = array();
-    $field_info = $this->versionSpecific->sourceFieldInfo('taxonomy_term', $this->sourceVocabulary);
-    foreach ($field_info as $field_name => $info) {
-      $fields[$field_name] = $info['label'];
-      $this->sourceFieldTypes[$field_name] = $info['type'];
+  public function prepareRow($row) {
+    if (parent::prepareRow($row) === FALSE) {
+      return FALSE;
     }
-    migrate_instrument_stop('DrupalTermMigration::sourceFieldList');
 
-    return $fields;
+    // Add the path to the source row, if relevant
+    if ($this->moduleExists('path')) {
+      $path = $this->version->getPath('term/' . $row->uid);
+      if ($path) {
+        $row->path = $path;
+      }
+    }
+    return TRUE;
   }
 }

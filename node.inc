@@ -21,49 +21,24 @@ abstract class DrupalNodeMigration extends DrupalMigration {
   /**
    * The source and destination content types (bundles) we're dealing with.
    */
-  protected $sourceType;
   protected $destinationType;
-
-  /**
-   * Mapping of each source CCK field to its type.
-   *
-   * @var array
-   */
-  protected $sourceFieldTypes = array();
-
-  /**
-   * Mapping of database column name suffixes for each field type. Derived
-   * classes may add custom fields to this array.
-   *
-   * @var array
-   */
-  protected $fieldSuffixes = array();
-
-  /**
-   * @abstract
-   * Version-specific classes must implement nodeQuery, returning a query that
-   * provides all the basic fields for each node.
-   */
-  abstract protected function nodeQuery();
 
   /**
    * @param array $arguments
    */
   public function __construct(array $arguments) {
-    $this->sourceType = $arguments['source_type'];
     $this->destinationType = $arguments['destination_type'];
     if (!empty($arguments['user_migration'])) {
       $user_migration = $arguments['user_migration'];
       $this->dependencies[] = $user_migration;
     }
     parent::__construct($arguments);
-    $this->sourceFields += $this->sourceFieldList();
-    // @todo: Should be conditional
-    $this->sourceFields['path'] = t('Node: Path alias');
+    $this->sourceFields += $this->version->getSourceFields('node', $this->sourceType);
+    if ($this->moduleExists('path')) {
+      $this->sourceFields['path'] = array('label' => t('Node: Path alias'));
+    }
 
-    // Create our three main objects - source, destination, and map
-
-    $this->source = new MigrateSourceSQL($this->nodeQuery(), $this->sourceFields, NULL,
+    $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields, NULL,
       $this->sourceOptions);
 
     $this->destination = new MigrateDestinationNode($this->destinationType);
@@ -81,21 +56,13 @@ abstract class DrupalNodeMigration extends DrupalMigration {
     );
 
     // Setup common mappings
-    $this->addSimpleMappings(array('title', 'status', 'created', 'changed',
+    $this->addSimpleMappings(array('title', 'body', 'status', 'created', 'changed',
       'comment', 'promote', 'sticky'));
 
     $this->addFieldMapping('language', 'language')
          ->defaultValue('und');
 
-    $this->addFieldMapping(NULL, 'format')
-         ->description(t('Translated in prepareRow()'));
-
-    $arguments = MigrateTextFieldHandler::arguments(array('source_field' => 'teaser'),
-                                                    array('source_field' => 'format'));
-    $this->addFieldMapping('body', 'body')
-         ->arguments($arguments);
-
-    $this->addUnmigratedSources(array('vid', 'moderate', 'teaser'));
+    $this->addUnmigratedSources(array('vid'));
     $this->addUnmigratedDestinations(array('is_new', 'revision',
       'revision_uid', 'log', 'tnid'));
 
@@ -115,28 +82,25 @@ abstract class DrupalNodeMigration extends DrupalMigration {
            ->defaultValue($default_uid);
     }
 
-    $this->addFieldMapping('path', 'path')
-         ->description('Handled in prepareRow');
-  }
-
-  /**
-   * Retrieves the available fields for this content type.
-   *
-   * @return array
-   */
-  public function sourceFieldList() {
-    migrate_instrument_start('DrupalNodeMigration::sourceFieldList');
-    $fields = array();
-
-    $this->sourceFieldTypes = array();
-    $field_info = $this->versionSpecific->sourceFieldInfo('node', $this->sourceType);
-    foreach ($field_info as $field_name => $info) {
-      $fields[$field_name] = $info['label'];
-      $this->sourceFieldTypes[$field_name] = $info['type'];
+    if ($this->moduleExists('path')) {
+      $this->addFieldMapping('path', 'path')
+           ->description('Handled in prepareRow');
     }
-    migrate_instrument_stop('DrupalNodeMigration::sourceFieldList');
 
-    return $fields;
+    if (module_exists('pathauto')) {
+      $this->addFieldMapping('pathauto')
+           ->description('By default, disable in favor of migrated paths')
+           ->defaultValue(0);
+    }
+
+    if (module_exists('statistics')) {
+      if ($this->moduleExists('statistics')) {
+        $this->addSimpleMappings(array('totalcount', 'daycount', 'timestamp'));
+      }
+      else {
+        $this->addUnmigratedDestinations(array('totalcount', 'daycount', 'timestamp'));
+      }
+    }
   }
 
   /**
@@ -148,21 +112,15 @@ abstract class DrupalNodeMigration extends DrupalMigration {
       return FALSE;
     }
 
-    // Translate the format
-    if (!empty($row->format)) {
-      $row->format = $this->mapFormat($row->format);
-    }
-    if (empty($row->format)) {
-      $row->format = 'filtered_html';
-    }
-
     // Add the path to the source row, if relevant
     if ($this->moduleExists('path')) {
-      $path = $this->versionSpecific->getPath('node/' . $row->nid);
+      $path = $this->version->getPath('node/' . $row->nid);
       if ($path) {
         $row->path = $path;
       }
     }
+
+    $this->version->getSourceValues($row, $row->nid);
   }
 
   /**

@@ -20,21 +20,21 @@ class DrupalComment6Migration extends DrupalCommentMigration {
   }
 
   /**
-   * Implementation of DrupalCommentMigration::commentQuery().
+   * Implementation of DrupalCommentMigration::query().
    *
    * We join to {node} so that we can use separate comment migration classes
    * for each associated node type.
    *
    * @return SelectQueryInterface
    */
-  protected function commentQuery($sourceType) {
+  protected function query() {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('comments', 'c')
              ->fields('c', array('cid', 'pid', 'nid', 'uid', 'subject',
                'comment', 'hostname', 'timestamp', 'status', 'thread', 'name',
                'mail', 'homepage', 'format'));
     $query->join('node', 'n', 'c.nid = n.nid');
-    $query->condition('n.type', $sourceType);
+    $query->condition('n.type', $this->sourceType);
 
     return $query;
   }

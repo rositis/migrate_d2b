@@ -55,7 +55,7 @@ class DrupalMenuLinks6Migration extends DrupalMenuLinksMigration {
    *
    * @return QueryConditionInterface
    */
-  protected function menuLinksQuery() {
+  protected function query() {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('menu_links', 'm')
              ->fields('m');

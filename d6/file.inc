@@ -1,6 +1,5 @@
 <?php
 
-
 class DrupalFile6Migration extends DrupalFileMigration {
   protected $legacyPath;
 
@@ -24,7 +23,7 @@ class DrupalFile6Migration extends DrupalFileMigration {
     }
   }
 
-  protected function fileQuery() {
+  protected function query() {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('files', 'f')
              ->fields('f')
@@ -85,7 +84,7 @@ class DrupalPicture6Migration extends DrupalFile6Migration {
    *
    * @return SelectQueryInterface
    */
-  protected function fileQuery() {
+  protected function query() {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('users', 'f')
              ->condition('picture', '', '<>')

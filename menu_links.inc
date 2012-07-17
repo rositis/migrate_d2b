@@ -50,7 +50,7 @@ abstract class DrupalMenuLinksMigration extends DrupalMigration {
     parent::__construct($arguments);
 
     // Create our three main objects - source, destination, and map
-    $this->source = new MigrateSourceSQL($this->menuLinksQuery(), $this->sourceFields,
+    $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields,
       NULL, $this->sourceOptions);
 
     $this->destination = new MigrateDestinationMenuLinks();
@@ -67,14 +67,6 @@ abstract class DrupalMenuLinksMigration extends DrupalMigration {
       MigrateDestinationMenuLinks::getKeySchema()
     );
   }
-
-  /**
-   * @abstract
-   * Query for the basic menu_links data.
-   *
-   * @return QueryConditionInterface
-   */
-  abstract protected function menuLinksQuery();
 
   /**
    * Creates a stub menu link, for when a child is imported before its parent
