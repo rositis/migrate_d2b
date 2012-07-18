@@ -33,7 +33,7 @@ class DrupalNode6Migration extends DrupalNodeMigration {
     // Pick up simple CCK fields
     $cck_table = 'content_type_' . $this->sourceType;
     if (Database::getConnection('default', $this->sourceConnection)
-          ->schema()->tableExists('content_node_field_instance')) {
+          ->schema()->tableExists($cck_table)) {
       $query->leftJoin($cck_table, 'f', 'n.vid=f.vid');
       // The main column for the field should be rendered with
       // the field name, not the column name (e.g., field_foo rather
