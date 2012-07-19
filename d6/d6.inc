@@ -256,7 +256,10 @@ class DrupalVersion6 extends DrupalVersion {
              ->select('variable', 'v')
              ->fields('v', array('name'))
              ->condition('name', 'content_profile_use_%', 'LIKE')
-             ->condition('value', 'i:1;')
+             ->condition(db_or()
+                 ->condition('value', 'i:1;')
+                 ->condition('value', 'b:1;')
+               )
              ->execute()
              ->fetchCol();
     $index = strlen('content_profile_use_');
