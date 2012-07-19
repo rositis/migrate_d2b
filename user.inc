@@ -14,8 +14,18 @@ abstract class DrupalUserMigration extends DrupalMigration {
   protected $pictureMigration = '';
 
   /**
+   * If there's a user role migration, keep track of the machine name
+   * for dependency management and sourceMigration.
+   *
+   * @var string
+   */
+  protected $roleMigration = '';
+
+  /**
    * @param array $arguments
    * picture_migration - Machine name of a picture migration, used to establish
+   *   dependencies and a sourceMigration for the picture mapping.
+   * role_migration - Machine name of a role migration, used to establish
    *   dependencies and a sourceMigration for the picture mapping.
    */
   public function __construct(array $arguments) {
@@ -24,13 +34,20 @@ abstract class DrupalUserMigration extends DrupalMigration {
       $this->pictureMigration = $arguments['picture_migration'];
       $this->dependencies[] = $this->pictureMigration;
     }
+    if (!empty($arguments['role_migration'])) {
+      $this->roleMigration = $arguments['role_migration'];
+      $this->dependencies[] = $this->roleMigration;
+    }
 
     // Get any CCK/core fields attached to users.
     $this->sourceFields += $this->version->getSourceFields(
       'user', 'user');
 
     if ($this->moduleExists('path')) {
-      $this->sourceFields['path'] = array('label' => t('Node: Path alias'));
+      $this->sourceFields['path'] = array('label' => t('User: Path alias'));
+    }
+    if ($this->roleMigration) {
+      $this->sourceFields['roles'] = array('label' => t('User: Roles'));
     }
 
     $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields,
@@ -49,7 +66,6 @@ abstract class DrupalUserMigration extends DrupalMigration {
     );
 
     // Most mappings are straight-forward
-    // @todo: Anything special to do with theme?
     $this->addSimpleMappings(array('pass', 'mail', 'theme', 'signature',
       'created', 'access', 'login', 'status', 'language', 'init', 'timezone'));
     // user_save() expects the data field to be unpacked
@@ -65,9 +81,14 @@ abstract class DrupalUserMigration extends DrupalMigration {
     else {
       $this->addFieldMapping('picture', 'picture');
     }
-    $this->addFieldMapping('roles')
-         ->description(t('TODO: handle roles automatically'))
-         ->issuePriority(MigrateFieldMapping::ISSUE_PRIORITY_MEDIUM);
+    if (isset($this->roleMigration)) {
+      $this->addFieldMapping('roles', 'roles')
+           ->sourceMigration($this->roleMigration);
+    }
+    else {
+      $this->addFieldMapping('roles');
+    }
+
     $this->addFieldMapping('signature_format', 'signature_format')
          ->callbacks(array($this, 'mapFormat'));
 
@@ -144,6 +165,18 @@ abstract class DrupalUserMigration extends DrupalMigration {
 
     // Pick up profile data.
     $this->version->getSourceValues($row, $row->uid);
+
+    // Populate the source roles
+    if ($this->roleMigration) {
+      $result = Database::getConnection('default', $this->sourceConnection)
+                ->select('users_roles', 'ur')
+                ->fields('ur', array('rid'))
+                ->condition('uid', $row->uid)
+                ->execute();
+      foreach ($result as $role_row) {
+        $row->roles[] = $role_row->rid;
+      }
+    }
     return TRUE;
   }
 
