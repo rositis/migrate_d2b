@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Handling specific to a Drupal 6 source for comments.
+ * Handling specific to a Drupal 7 source for comments.
  */
-class DrupalComment6Migration extends DrupalCommentMigration {
+class DrupalComment7Migration extends DrupalCommentMigration {
 
   /**
    * @param array $arguments
@@ -14,17 +14,9 @@ class DrupalComment6Migration extends DrupalCommentMigration {
     // Version-specific field mappings
     $this->addFieldMapping('comment_body', 'comment');
     $this->addFieldMapping('comment_body:format', 'format');
+
     $this->addFieldMapping('created', 'timestamp');
     $this->addFieldMapping('changed', 'timestamp');
-    // Comment status flag flipped between D6 and D7
-    $this->addFieldMapping('status', 'status')
-         ->callbacks(array($this, 'handleStatus'));
-
-    $this->addUnmigratedDestinations(array('language', 'comment_body:language'));
-  }
-
-  protected function handleStatus($value) {
-    return !$value;
   }
 
   /**

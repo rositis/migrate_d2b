@@ -15,6 +15,7 @@
  *
  * user_migration - Machine name of a user migration, used to establish
  *   dependencies and a sourceMigration for the uid mapping.
+ * node_migration - Machine name of the parent node migration.
  * default_uid - Drupal 7 (destination) uid of the user account to use as
  *   the default.
  */
@@ -30,8 +31,10 @@ abstract class DrupalCommentMigration extends DrupalMigration {
   public function __construct(array $arguments) {
     $this->sourceType = $arguments['source_type'];
     $this->destinationType = $arguments['destination_type'];
-    $this->nodeMigration = $arguments['node_migration'];
-    $this->dependencies[] = $arguments['node_migration'];
+    if (!empty($arguments['node_migration'])) {
+      $this->nodeMigration = $arguments['node_migration'];
+      $this->dependencies[] = $this->nodeMigration;
+    }
 
     if (!empty($arguments['user_migration'])) {
       $user_migration = $arguments['user_migration'];
@@ -70,8 +73,13 @@ abstract class DrupalCommentMigration extends DrupalMigration {
     $this->addSimpleMappings(array('pid', 'subject',
       'hostname', 'thread', 'name', 'mail', 'homepage'));
 
-    $this->addFieldMapping('nid', 'nid')
-         ->sourceMigration($this->nodeMigration);
+    if (!empty($this->nodeMigration)) {
+      $this->addFieldMapping('nid', 'nid')
+           ->sourceMigration($this->nodeMigration);
+    }
+    else {
+      $this->addFieldMapping('nid', 'nid');
+    }
 
     if (!empty($arguments['default_uid'])) {
       $default_uid = $arguments['default_uid'];

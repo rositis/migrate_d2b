@@ -32,7 +32,7 @@ class DrupalFile6Migration extends DrupalFileMigration {
   }
 
   protected function fixUri($uri) {
-    // Get the URI relative the the file directory
+    // Get the URI relative to the file directory
     $result = str_replace($this->legacyPath, '', $uri);
     return $result;
   }

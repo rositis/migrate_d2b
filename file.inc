@@ -81,6 +81,6 @@ abstract class DrupalFileMigration extends DrupalMigration {
     }
     $this->addUnmigratedDestinations(array('path'));
     $this->addUnmigratedSources(array('filename', 'filemime', 'filesize',
-                                'status', 'type'));
+                                'status'));
   }
 }

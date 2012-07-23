@@ -64,7 +64,7 @@ abstract class DrupalNodeMigration extends DrupalMigration {
 
     $this->addUnmigratedSources(array('vid'));
     $this->addUnmigratedDestinations(array('is_new', 'revision',
-      'revision_uid', 'log', 'tnid'));
+      'revision_uid', 'log'));
 
     if (!empty($arguments['default_uid'])) {
       $default_uid = $arguments['default_uid'];

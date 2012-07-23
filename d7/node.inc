@@ -18,6 +18,7 @@ class DrupalNode7Migration extends DrupalNodeMigration {
     $this->addFieldMapping('tnid', 'tnid', FALSE)
          ->sourceMigration($arguments['machine_name']);
      */
+    $this->addFieldMapping('tnid', NULL);
     $this->addFieldMapping(NULL, 'tnid');
 
     $this->addFieldMapping('translate', 'translate');

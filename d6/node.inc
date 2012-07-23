@@ -14,6 +14,14 @@ class DrupalNode6Migration extends DrupalNodeMigration {
     $this->addFieldMapping('body:format', 'format');
     $this->addFieldMapping('body:language');
     $this->addFieldMapping(NULL, 'moderate');
+    /** @todo Prevent stub creation when tnid == 0
+    $this->addFieldMapping('tnid', 'tnid', FALSE)
+         ->sourceMigration($arguments['machine_name']);
+     */
+    $this->addFieldMapping('tnid', NULL);
+    $this->addFieldMapping(NULL, 'tnid');
+
+    $this->addFieldMapping('translate', 'translate');
   }
 
   /**

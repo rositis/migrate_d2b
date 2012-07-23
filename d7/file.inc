@@ -20,6 +20,7 @@ class DrupalFile7Migration extends DrupalFileMigration {
          ->callbacks(array($this, 'fixUri'));
     $this->addFieldMapping('destination_file', 'uri')
       ->callbacks(array($this, 'fixUri'));
+    $this->addSimpleMappings(array('type'));
   }
 
   protected function query() {
