@@ -102,8 +102,9 @@ class DrupalVersion5 extends DrupalVersion {
           $db_columns = unserialize($row->db_columns);
           $columns = array();
           foreach ($db_columns as $column_name => $column_info) {
+            $display_name = $field_name . ':' . $column_name;
             $column_name = $field_name . '_' . $column_name;
-            $columns[$column_name] = $column_name;
+            $columns[$display_name] = $column_name;
           }
           $this->sourceFieldInfo[$field_name] = array(
             'label' => $row->label,
@@ -182,12 +183,12 @@ class DrupalVersion5 extends DrupalVersion {
                       ->execute();
             foreach ($result as $field_row) {
               $i = 0;
-              foreach ($this->sourceFieldInfo[$field_name]['columns'] as $column_name) {
+              foreach ($this->sourceFieldInfo[$field_name]['columns'] as $display_name => $column_name) {
                 if ($i++ == 0) {
                   $index = $field_name;
                 }
                 else {
-                  $index = $column_name;
+                  $index = $display_name;
                 }
                 $row->{$index}[] = $field_row->$column_name;
               }
@@ -210,12 +211,12 @@ class DrupalVersion5 extends DrupalVersion {
           foreach ($this->sourceFieldInfo as $field_name => $info) {
             if (isset($info['columns']) && !$info['multiple'] && $info['db_storage']) {
               $i = 0;
-              foreach ($info['columns'] as $column_name) {
+              foreach ($info['columns'] as $display_name => $column_name) {
                 if ($i++ == 0) {
                   $query->addField('f', $column_name, $field_name);
                 }
                 else {
-                  $query->addField('f', $column_name);
+                  $query->addField('f', $column_name, $display_name);
                 }
               }
             }

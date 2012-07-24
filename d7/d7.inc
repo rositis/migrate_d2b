@@ -100,7 +100,8 @@ class DrupalVersion7 extends DrupalVersion {
       $prefix_len = strlen($prefix);
       foreach ($row as $column_name => $value) {
         if ($prefix == substr($column_name, 0, $prefix_len)) {
-          $columns[$column_name] = $column_name;
+          $display_name = $field_name . ':' . substr($column_name, $prefix_len);
+          $columns[$display_name] = $column_name;
         }
       }
     }
@@ -130,12 +131,12 @@ class DrupalVersion7 extends DrupalVersion {
         $i = 0;
         // We assume the first column is the "primary" value of the field, and
         // assign the field name rather than the column name for it.
-        foreach ($this->sourceFieldInfo[$field_name]['columns'] as $column_name) {
+        foreach ($this->sourceFieldInfo[$field_name]['columns'] as $display_name => $column_name) {
           if ($i++ == 0) {
             $index = $field_name;
           }
           else {
-            $index = $column_name;
+            $index = $display_name;
           }
           $row->{$index}[] = $field_row->$column_name;
         }

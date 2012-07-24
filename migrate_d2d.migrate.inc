@@ -278,11 +278,11 @@ abstract class DrupalVersion {
       $fields[$field_name] = $info['label'];
       $i = 0;
       if (isset($info['columns'])) {
-        foreach ($info['columns'] as $column_name) {
+        foreach ($info['columns'] as $display_name => $column_name) {
           // We skip the first column, which we've covered with the field name
           // itself.
           if ($i > 0) {
-            $fields[$column_name] = t('!label subfield', array('!label' => $info['label']));
+            $fields[$display_name] = t('!label subfield', array('!label' => $info['label']));
           }
           $i++;
         }

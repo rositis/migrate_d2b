@@ -10,8 +10,8 @@ class DrupalNode7Migration extends DrupalNodeMigration {
   public function __construct(array $arguments) {
     parent::__construct($arguments);
 
-    $this->addFieldMapping('body:summary', 'body_summary');
-    $this->addFieldMapping('body:format', 'body_format')
+    $this->addFieldMapping('body:summary', 'body:summary');
+    $this->addFieldMapping('body:format', 'body:format')
          ->callbacks(array($this, 'mapFormat'));
     $this->addFieldMapping('body:language');
 

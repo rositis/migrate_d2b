@@ -43,12 +43,12 @@ class DrupalNode5Migration extends DrupalNodeMigration {
       foreach ($field_info as $field_name => $info) {
         if (isset($info['columns']) && !$info['multiple'] && $info['db_storage']) {
           $i = 0;
-          foreach ($info['columns'] as $column_name) {
+          foreach ($info['columns'] as $display_name => $column_name) {
             if ($i++ == 0) {
               $query->addField('f', $column_name, $field_name);
             }
             else {
-              $query->addField('f', $column_name);
+              $query->addField('f', $column_name, $display_name);
             }
           }
         }
