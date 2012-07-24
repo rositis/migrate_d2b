@@ -13,7 +13,8 @@ class DrupalComment7Migration extends DrupalCommentMigration {
 
     // Version-specific field mappings
     $this->addFieldMapping('comment_body', 'comment');
-    $this->addFieldMapping('comment_body:format', 'format');
+    $this->addFieldMapping('comment_body:format', 'format')
+         ->callbacks(array($this, 'mapFormat'));
 
     $this->addFieldMapping('created', 'timestamp');
     $this->addFieldMapping('changed', 'timestamp');
