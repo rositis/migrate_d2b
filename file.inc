@@ -17,6 +17,8 @@
  *   dependencies and a sourceMigration for the uid mapping.
  * default_uid - Drupal 7 (destination) uid of the user account to use as
  *   the default.
+ * file_class - Override for the default MigrateFileUri file class.
+ * destination_dir - Destination directory for the files (defaults to public://).
  */
 abstract class DrupalFileMigration extends DrupalMigration {
   public function __construct(array $arguments) {
@@ -24,6 +26,12 @@ abstract class DrupalFileMigration extends DrupalMigration {
     if (!empty($arguments['user_migration'])) {
        $user_migration = $arguments['user_migration'];
        $this->dependencies[] = $user_migration;
+    }
+    if (empty($arguments['file_class'])) {
+      $arguments['file_class'] = 'MigrateFileUri';
+    }
+    if (empty($arguments['destination_dir'])) {
+      $arguments['destination_dir'] = 'public://';
     }
     $this->sourceFields += $this->version->getSourceFields('file', 'file');
     // Allow derived classes to override this definition by setting it before
@@ -45,7 +53,7 @@ abstract class DrupalFileMigration extends DrupalMigration {
     $this->source = new MigrateSourceSQL($this->query(),
       $this->sourceFields, NULL, $this->sourceOptions);
 
-    $this->destination = new MigrateDestinationFile();
+    $this->destination = new MigrateDestinationFile('file', $arguments['file_class']);
 
     $this->highwaterField = array(
       'name' => 'timestamp',
@@ -55,7 +63,7 @@ abstract class DrupalFileMigration extends DrupalMigration {
 
     // Setup common mappings
     $this->addFieldMapping('destination_dir')
-         ->defaultValue('public://legacy');
+         ->defaultValue($arguments['destination_dir']);
     $this->addFieldMapping('source_dir')
          ->defaultValue($arguments['source_dir']);
     $this->addFieldMapping('timestamp', 'timestamp');

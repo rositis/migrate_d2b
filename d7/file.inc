@@ -23,11 +23,17 @@ class DrupalFile7Migration extends DrupalFileMigration {
     $this->addFieldMapping(NULL, 'type');
   }
 
-  protected function query() {
+  protected function baseQuery() {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('file_managed', 'f')
              ->fields('f')
              ->orderBy('timestamp');
+    return $query;
+  }
+
+  protected function query() {
+    $query = $this->baseQuery();
+    $query->condition('uri', 'youtube://%', 'NOT LIKE');
     if ($this->skipPictures) {
       $query->leftJoin('users', 'u', 'f.fid=u.picture');
       $query->isNull('u.uid');
@@ -73,8 +79,44 @@ class DrupalPicture7Migration extends DrupalFile7Migration {
    * @return SelectQueryInterface
    */
   protected function query() {
-    $query = parent::query();
+    $query = $this->baseQuery();
     $query->innerJoin('users', 'u', 'f.fid=u.picture');
     return $query;
+  }
+}
+
+/**
+ * Pull youtube links in their own migration class, based on normal file migration.
+ */
+class DrupalYoutube7Migration extends DrupalFile7Migration {
+  public function __construct(array $arguments) {
+    $arguments['file_class'] = 'MigrateExtrasFileYoutube';
+    parent::__construct($arguments);
+    // Clear references to normal file fields
+    $this->removeFieldMapping('destination_dir');
+    $this->removeFieldMapping('source_dir');
+    $this->removeFieldMapping('file_replace');
+    $this->removeFieldMapping('preserve_files');
+    $this->removeFieldMapping('destination_file');
+  }
+
+  /**
+   * We override the file query to identify which files are user pictures.
+   *
+   * @return SelectQueryInterface
+   */
+  protected function query() {
+    $query = $this->baseQuery();
+    $query->condition('uri', 'youtube://%', 'LIKE');
+    return $query;
+  }
+
+  public function prepareRow($row) {
+    if (parent::prepareRow($row) === FALSE) {
+      return FALSE;
+    }
+    return;
+    $row->uri = str_replace('youtube://v/', 'http://www.youtube.com/watch?v=',
+                            $row->uri);
   }
 }
