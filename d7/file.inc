@@ -115,7 +115,6 @@ class DrupalYoutube7Migration extends DrupalFile7Migration {
     if (parent::prepareRow($row) === FALSE) {
       return FALSE;
     }
-    return;
     $row->uri = str_replace('youtube://v/', 'http://www.youtube.com/watch?v=',
                             $row->uri);
   }
