@@ -11,7 +11,7 @@ class DrupalUser6Migration extends DrupalUserMigration {
     parent::__construct($arguments);
 
     // Indicate that our incoming MD5 passwords should be rehashed for Drupal 7.
-    $this->destination = new MigrateDestinationUser(array('md5_passwords' => TRUE));
+    $this->destination = new DrupalDestinationUser(array('md5_passwords' => TRUE));
 
     // Per-user comment settings dropped in Drupal 7.
     $this->addUnmigratedSources(array('mode', 'threshold', 'sort'));

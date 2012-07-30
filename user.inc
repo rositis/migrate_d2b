@@ -62,7 +62,7 @@ abstract class DrupalUserMigration extends DrupalMigration {
                        'alias' => 'u',
                       ),
       ),
-      MigrateDestinationUser::getKeySchema()
+      DrupalDestinationUser::getKeySchema()
     );
 
     // Most mappings are straight-forward
@@ -209,5 +209,17 @@ abstract class DrupalUserMigration extends DrupalMigration {
           ->execute();
       }
     }
+  }
+}
+
+/**
+ * We add support for user paths, which is not supported by the core destination,
+ * so document the presence of the field.
+ */
+class DrupalDestinationUser extends MigrateDestinationUser {
+  public function fields($migration = NULL) {
+    $fields = parent::fields($migration);
+    $fields['path'] = t('Node: Path alias');
+    return $fields;
   }
 }
