@@ -66,10 +66,19 @@ class DrupalVersion7 extends DrupalVersion {
         $result = $query->execute();
         foreach ($result as $row) {
           $data = unserialize($row->data);
+          // Although a format column is present for text fields with text
+          // filtering disabled, we want to skip it
+          if (substr($row->type, 0, 4) == 'text' &&
+              $data['settings']['text_processing'] == 0) {
+            $skip_format = TRUE;
+          }
+          else {
+            $skip_format = FALSE;
+          }
           $this->sourceFieldInfo[trim($row->field_name)] = array(
             'label' => $data['label'],
             'type' => $row->type,
-            'columns' => $this->getSourceFieldColumns($row->field_name),
+            'columns' => $this->getSourceFieldColumns($row->field_name, $skip_format),
           );
         }
       }
@@ -86,7 +95,7 @@ class DrupalVersion7 extends DrupalVersion {
    *
    * @return array
    */
-  protected function getSourceFieldColumns($field_name) {
+  protected function getSourceFieldColumns($field_name, $skip_format = FALSE) {
     $table = 'field_data_' . $field_name;
     $row = Database::getConnection('default', $this->arguments['source_connection'])
                      ->select($table, 'r')
@@ -100,8 +109,11 @@ class DrupalVersion7 extends DrupalVersion {
       $prefix_len = strlen($prefix);
       foreach ($row as $column_name => $value) {
         if ($prefix == substr($column_name, 0, $prefix_len)) {
-          $display_name = $field_name . ':' . substr($column_name, $prefix_len);
-          $columns[$display_name] = $column_name;
+          $suffix = substr($column_name, $prefix_len);
+          if ($suffix != 'format' || !$skip_format) {
+            $display_name = $field_name . ':' . $suffix;
+            $columns[$display_name] = $column_name;
+          }
         }
       }
     }
