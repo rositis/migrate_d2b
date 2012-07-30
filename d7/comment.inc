@@ -12,12 +12,10 @@ class DrupalComment7Migration extends DrupalCommentMigration {
     parent::__construct($arguments);
 
     // Version-specific field mappings
-    $this->addFieldMapping('comment_body', 'comment');
-    $this->addFieldMapping('comment_body:format', 'format')
+    $this->addSimpleMappings(array('comment_body', 'created', 'changed',
+                               'status', 'language'));
+    $this->addFieldMapping('comment_body:format', 'comment_body:format')
          ->callbacks(array($this, 'mapFormat'));
-
-    $this->addFieldMapping('created', 'timestamp');
-    $this->addFieldMapping('changed', 'timestamp');
   }
 
   /**
@@ -30,10 +28,10 @@ class DrupalComment7Migration extends DrupalCommentMigration {
    */
   protected function query() {
     $query = Database::getConnection('default', $this->sourceConnection)
-             ->select('comments', 'c')
+             ->select('comment', 'c')
              ->fields('c', array('cid', 'pid', 'nid', 'uid', 'subject',
-               'comment', 'hostname', 'timestamp', 'status', 'thread', 'name',
-               'mail', 'homepage', 'format'));
+               'hostname', 'created', 'changed', 'status', 'thread', 'name',
+               'mail', 'homepage', 'language'));
     $query->join('node', 'n', 'c.nid = n.nid');
     $query->condition('n.type', $this->sourceType);
 
@@ -41,13 +39,14 @@ class DrupalComment7Migration extends DrupalCommentMigration {
   }
 
   /**
-   * Implementation of Migration::prepareRow().
-   *
-   * @param $row
+   * Called after the query data is fetched - we'll use this to populate the
+   * source row with the CCK fields.
    */
   public function prepareRow($row) {
     if (parent::prepareRow($row) === FALSE) {
       return FALSE;
     }
+
+    $this->version->getSourceValues($row, $row->cid);
   }
 }
