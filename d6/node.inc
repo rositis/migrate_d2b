@@ -5,6 +5,16 @@
  */
 class DrupalNode6Migration extends DrupalNodeMigration {
   /**
+   * Translation from field names assigned when executing the query to our
+   * subfield notation.
+   *
+   * @var array
+   *  key: DB-compatible name (e.g., field_buy_link_title).
+   *  value: Subfield notation (e.g., field_buy_link:title).
+   */
+  protected $fixFieldNames = array();
+
+  /**
    * @param array $arguments
    */
   public function __construct(array $arguments) {
@@ -56,12 +66,30 @@ class DrupalNode6Migration extends DrupalNodeMigration {
               $query->addField('f', $column_name, $field_name);
             }
             else {
-              $query->addField('f', $column_name, $display_name);
+              // The database API won't allow colons in column aliases, so we
+              // will accept the default alias, and fix up the field names later.
+              // Remember how to translate the field names.
+              $clean_name = str_replace(':', '_', $display_name);
+              $this->fixFieldNames[$clean_name] = $display_name;
+              $query->addField('f', $column_name);
             }
           }
         }
       }
     }
     return $query;
+  }
+
+  public function prepareRow($row) {
+    if (parent::prepareRow($row) === FALSE) {
+      return FALSE;
+    }
+    // Convert the default field names to the nice-looking ones.
+    foreach ($this->fixFieldNames as $clean => $display) {
+      if (isset($row->$clean)) {
+        $row->$display = $row->$clean;
+        unset($row->$clean);
+      }
+    }
   }
 }
