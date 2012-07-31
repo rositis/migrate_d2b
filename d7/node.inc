@@ -10,6 +10,9 @@ class DrupalNode7Migration extends DrupalNodeMigration {
   public function __construct(array $arguments) {
     parent::__construct($arguments);
 
+    $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields, NULL,
+      $this->sourceOptions);
+
     $this->addFieldMapping('body:summary', 'body:summary');
     $this->addFieldMapping('body:format', 'body:format')
          ->callbacks(array($this, 'mapFormat'));

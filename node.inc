@@ -38,9 +38,6 @@ abstract class DrupalNodeMigration extends DrupalMigration {
       $this->sourceFields['path'] = array('label' => t('Node: Path alias'));
     }
 
-    $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields, NULL,
-      $this->sourceOptions);
-
     $this->destination = new MigrateDestinationNode($this->destinationType);
 
     $this->map = new MigrateSQLMap($this->machineName,
