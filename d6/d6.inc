@@ -292,19 +292,22 @@ class DrupalVersion6 extends DrupalVersion {
    * @param $entity_id
    */
   public function getProfileValues($row, $entity_id) {
-    migrate_instrument_start('DrupalVersion6::getProfileValues');
-    $query = Database::getConnection('default', $this->arguments['source_connection'])
-             ->select('profile_values', 'v')
-             ->fields('v', array('value'))
-             ->condition('uid', $entity_id)
-             ->condition('value', '', '<>');
-    $query->innerJoin('profile_fields', 'f', 'v.fid=f.fid');
-    $query->fields('f', array('name'));
-    $result = $query->execute();
-    foreach ($result as $data_row) {
-      $row->{$data_row->name} = $data_row->value;
-    }
+    if (Database::getConnection('default', $this->arguments['source_connection'])
+          ->schema()->tableExists('profile_values')) {
+      migrate_instrument_start('DrupalVersion6::getProfileValues');
+      $query = Database::getConnection('default', $this->arguments['source_connection'])
+               ->select('profile_values', 'v')
+               ->fields('v', array('value'))
+               ->condition('uid', $entity_id)
+               ->condition('value', '', '<>');
+      $query->innerJoin('profile_fields', 'f', 'v.fid=f.fid');
+      $query->fields('f', array('name'));
+      $result = $query->execute();
+      foreach ($result as $data_row) {
+        $row->{$data_row->name} = $data_row->value;
+      }
 
-    migrate_instrument_stop('DrupalVersion6::getProfileValues');
+      migrate_instrument_stop('DrupalVersion6::getProfileValues');
+    }
   }
 }
