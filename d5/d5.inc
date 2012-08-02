@@ -232,7 +232,7 @@ class DrupalVersion5 extends DrupalVersion {
       $query = Database::getConnection('default', $this->arguments['source_connection'])
                ->select('term_node', 'tn')
                ->fields('tn', array('tid'))
-               ->condition('tn.vid', $revision_id);
+               ->condition('tn.nid', $row->nid);
       $query->innerJoin('term_data', 'td', 'tn.tid=td.tid');
       $query->fields('td', array('vid'));
       $result = $query->execute();
