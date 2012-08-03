@@ -52,6 +52,12 @@ abstract class DrupalNodeMigration extends DrupalMigration {
       MigrateDestinationNode::getKeySchema()
     );
 
+    $this->highwaterField = array(
+      'name' => 'changed',
+      'alias' => 'n',
+      'type' => 'int',
+    );
+
     // Setup common mappings
     $this->addSimpleMappings(array('title', 'body', 'status', 'created', 'changed',
       'comment', 'promote', 'sticky'));

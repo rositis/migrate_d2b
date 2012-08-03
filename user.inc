@@ -65,6 +65,14 @@ abstract class DrupalUserMigration extends DrupalMigration {
       DrupalDestinationUser::getKeySchema()
     );
 
+    // We don't have a proper last-changed timestamp on users, access is the
+    // best we can do.
+    $this->highwaterField = array(
+      'name' => 'access',
+      'alias' => 'u',
+      'type' => 'int',
+    );
+
     // Most mappings are straight-forward
     $this->addSimpleMappings(array('pass', 'mail', 'theme', 'signature',
       'created', 'access', 'login', 'status', 'language', 'init', 'timezone'));
