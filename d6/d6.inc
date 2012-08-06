@@ -222,8 +222,10 @@ class DrupalVersion6 extends DrupalVersion {
             }
           }
           $data_row = $query->execute()->fetchObject();
-          foreach ($data_row as $name => $value) {
-            $row->$name = $value;
+          if (is_object($data_row)) {
+            foreach ($data_row as $name => $value) {
+              $row->$name = $value;
+            }
           }
         }
       }
