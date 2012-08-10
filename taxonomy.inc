@@ -91,7 +91,7 @@ abstract class DrupalTermMigration extends DrupalMigration {
 
     // Add the path to the source row, if relevant
     if ($this->moduleExists('path')) {
-      $path = $this->version->getPath('term/' . $row->tid);
+      $path = $this->version->getPath('taxonomy/term/' . $row->tid);
       if ($path) {
         $row->path = $path;
       }
