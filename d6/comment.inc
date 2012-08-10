@@ -11,6 +11,12 @@ class DrupalComment6Migration extends DrupalCommentMigration {
   public function __construct(array $arguments) {
     parent::__construct($arguments);
 
+    $this->highwaterField = array(
+      'name' => 'timestamp',
+      'alias' => 'c',
+      'type' => 'int',
+    );
+
     // Version-specific field mappings
     $this->addFieldMapping('comment_body', 'comment');
     $this->addFieldMapping('comment_body:format', 'format')
@@ -43,7 +49,8 @@ class DrupalComment6Migration extends DrupalCommentMigration {
                'comment', 'hostname', 'timestamp', 'status', 'thread', 'name',
                'mail', 'homepage', 'format'));
     $query->join('node', 'n', 'c.nid = n.nid');
-    $query->condition('n.type', $this->sourceType);
+    $query->condition('n.type', $this->sourceType)
+          ->orderBy('timestamp');
 
     return $query;
   }
