@@ -67,11 +67,14 @@ abstract class DrupalUserMigration extends DrupalMigration {
 
     // We don't have a proper last-changed timestamp on users, access is the
     // best we can do.
-    $this->highwaterField = array(
+    // @todo: Doesn't work in a straight-forward way, because access is 0 for
+    // accounts that haven't been logged in. Disabled until we come up with a
+    // good solution
+/*    $this->highwaterField = array(
       'name' => 'access',
       'alias' => 'u',
       'type' => 'int',
-    );
+    );*/
 
     // Most mappings are straight-forward
     $this->addSimpleMappings(array('pass', 'mail', 'theme', 'signature',
@@ -133,8 +136,8 @@ abstract class DrupalUserMigration extends DrupalMigration {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('users', 'u')
              ->fields('u')
-             ->condition('uid', 1, '>')
-             ->orderBy('access');
+             ->condition('uid', 1, '>');
+//             ->orderBy('access');
     return $query;
   }
 
