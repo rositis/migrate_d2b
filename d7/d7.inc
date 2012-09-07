@@ -65,7 +65,7 @@ class DrupalVersion7 extends DrupalVersion {
         $query->fields('f', array('field_name', 'type', 'module'));
         $result = $query->execute();
         foreach ($result as $row) {
-          $data = unserialize($row->data);
+          $data = !empty($row->data) ? unserialize($row->data) : array();
           // Although a format column is present for text fields with text
           // filtering disabled, we want to skip it
           if (substr($row->type, 0, 4) == 'text' &&

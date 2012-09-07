@@ -99,7 +99,7 @@ class DrupalVersion5 extends DrupalVersion {
         $result = $query->execute();
         foreach ($result as $row) {
           $field_name = trim($row->field_name);
-          $db_columns = unserialize($row->db_columns);
+          $db_columns = $db_columns = !empty($row->db_columns) ? unserialize($row->db_columns) : array();
           $columns = array();
           foreach ($db_columns as $column_name => $column_info) {
             $display_name = $field_name . ':' . $column_name;
