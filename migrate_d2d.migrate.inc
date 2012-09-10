@@ -154,7 +154,7 @@ abstract class DrupalMigration extends DynamicMigration {
     }
     $result = array();
     foreach ($format as $format_value) {
-      if (!empty($format_value) && !empty($this->formatMappings[$format_value])) {
+      if (isset($format_value) && isset($this->formatMappings[$format_value])) {
         $result[] = $this->formatMappings[$format_value];
       } else {
         $result[] =  NULL;
