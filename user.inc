@@ -136,7 +136,7 @@ abstract class DrupalUserMigration extends DrupalMigration {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('users', 'u')
              ->fields('u')
-             ->condition('uid', 1, '>');
+             ->condition('u.uid', 1, '>');
 //             ->orderBy('access');
     return $query;
   }
