@@ -146,7 +146,7 @@ abstract class DrupalMigration extends DynamicMigration {
    * machine name (D7+) to a D7 format machine name.
    *
    * @param $format
-   * @return string
+   * @return string|array
    */
   protected function mapFormat($format) {
     if (!is_array($format)) {
@@ -157,10 +157,16 @@ abstract class DrupalMigration extends DynamicMigration {
       if (isset($format_value) && isset($this->formatMappings[$format_value])) {
         $result[] = $this->formatMappings[$format_value];
       } else {
-        $result[] =  NULL;
+        $result[] = NULL;
       }
     }
-    return $result;
+    // Only return an array if we have to
+    if (count($result) > 1) {
+      return $result;
+    }
+    else {
+      return reset($result);
+    }
   }
 
   /**
