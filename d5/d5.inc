@@ -164,6 +164,7 @@ class DrupalVersion5 extends DrupalVersion {
     else {
       return;
     }
+    $schema = Database::getConnection('default', $this->arguments['source_connection'])->schema();
     foreach ($entity_id_list as $index => $entity_id) {
       $revision_id = $revision_id_list[$index];
       // Load up field data for dynamically mapped fields
@@ -173,15 +174,16 @@ class DrupalVersion5 extends DrupalVersion {
           // incorporated into the base query, so just look for the
           // shared/multiple field cases
           $table = "content_$field_name";
-          if (Database::getConnection('default', $this->arguments['source_connection'])
-              ->schema()->tableExists($table)) {
-            $result = Database::getConnection('default', $this->arguments['source_connection'])
-                      ->select($table, 'f')
-                      ->fields('f')
-                      ->condition('nid', $entity_id)
-                      ->orderBy('delta')
-                      ->execute();
-            foreach ($result as $field_row) {
+          if ($schema->tableExists($table)) {
+            $query = Database::getConnection('default', $this->arguments['source_connection'])
+                     ->select($table, 'f')
+                     ->fields('f')
+                     ->condition('nid', $entity_id);
+            // There isn't always a delta, @see http://drupal.org/node/1715244
+            if ($schema->fieldExists($table, 'delta')) {
+              $query->orderBy('delta');
+            }
+            $result = $query->execute();            foreach ($result as $field_row) {
               $i = 0;
               foreach ($this->sourceFieldInfo[$field_name]['columns'] as $display_name => $column_name) {
                 if ($i++ == 0) {
