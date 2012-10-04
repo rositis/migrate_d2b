@@ -30,7 +30,8 @@ class DrupalNode6Migration extends DrupalNodeMigration {
     $this->addFieldMapping('body:summary', 'teaser');
     $this->addFieldMapping('body:format', 'format')
          ->callbacks(array($this, 'mapFormat'));
-    $this->addFieldMapping('body:language');
+    $this->addFieldMapping('body:language')
+         ->defaultValue(LANGUAGE_NONE);
     $this->addFieldMapping(NULL, 'moderate');
     /** @todo Prevent stub creation when tnid == 0
     $this->addFieldMapping('tnid', 'tnid', FALSE)

@@ -16,7 +16,8 @@ class DrupalNode5Migration extends DrupalNodeMigration {
     $this->addFieldMapping('body:summary', 'teaser');
     $this->addFieldMapping('body:format', 'format')
          ->callbacks(array($this, 'mapFormat'));
-    $this->addFieldMapping('body:language');
+    $this->addFieldMapping('body:language')
+         ->defaultValue(LANGUAGE_NONE);
     $this->addFieldMapping(NULL, 'moderate');
   }
 

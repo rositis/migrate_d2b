@@ -63,7 +63,7 @@ abstract class DrupalNodeMigration extends DrupalMigration {
       'comment', 'promote', 'sticky'));
 
     $this->addFieldMapping('language', 'language')
-         ->defaultValue('und');
+         ->defaultValue(LANGUAGE_NONE);
 
     $this->addUnmigratedSources(array('vid'));
     $this->addUnmigratedDestinations(array('is_new', 'revision',
