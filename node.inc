@@ -16,12 +16,21 @@
  *   dependencies and a sourceMigration for the uid mapping.
  * default_uid - Drupal 7 (destination) uid of the user account to use as
  *   the default.
+ * default_language - Default language for the node and node body. Defaults
+ *   to LANGUAGE_NONE.
  */
 abstract class DrupalNodeMigration extends DrupalMigration {
   /**
    * The source and destination content types (bundles) we're dealing with.
    */
   protected $destinationType;
+
+  /**
+   * Default language to apply to the node and it's body field.
+   *
+   * @var string
+   */
+  protected $defaultLanguage = LANGUAGE_NONE;
 
   /**
    * @param array $arguments
@@ -31,6 +40,9 @@ abstract class DrupalNodeMigration extends DrupalMigration {
     if (!empty($arguments['user_migration'])) {
       $user_migration = $arguments['user_migration'];
       $this->dependencies[] = $user_migration;
+    }
+    if (!empty($arguments['default_language'])) {
+      $this->defaultLanguage = $arguments['default_language'];
     }
     parent::__construct($arguments);
     $this->sourceFields += $this->version->getSourceFields('node', $this->sourceType);
@@ -63,7 +75,9 @@ abstract class DrupalNodeMigration extends DrupalMigration {
       'comment', 'promote', 'sticky'));
 
     $this->addFieldMapping('language', 'language')
-         ->defaultValue(LANGUAGE_NONE);
+         ->defaultValue($this->defaultLanguage);
+    $this->addFieldMapping('body:language')
+         ->defaultValue($this->defaultLanguage);
 
     $this->addUnmigratedSources(array('vid'));
     $this->addUnmigratedDestinations(array('is_new', 'revision',
