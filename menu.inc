@@ -2,8 +2,6 @@
 
 /*
  * Class for menu migrations: from {menu_custom} into {menu_custom}.
- * Dependent on this patch for Migrate:
- * http://drupal.org/node/1403044#comment-5740118
  */
 abstract class DrupalMenuMigration extends DrupalMigration {
   /**
@@ -33,7 +31,7 @@ abstract class DrupalMenuMigration extends DrupalMigration {
     );
 
     // The mappings are straightforward
-    // @todo: Does this for D5 as well, or should we move this to d6/menu.inc?
+    // @todo: Does this work for D5 as well, or should we move this to d6/menu.inc?
     $this->addSimpleMappings(array('menu_name', 'title', 'description'));
   }
 }

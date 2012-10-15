@@ -64,11 +64,6 @@ abstract class DrupalCommentMigration extends DrupalMigration {
 
     /**
      * Setup common mappings.
-     * @todo: These mappings are common to D6 and D7, but I'm not sure for D5.
-     * The following mappings are version-specific:
-     *   -'created'
-     *   -'changed'
-     *   -'comment_body'
      */
     $this->addSimpleMappings(array('pid', 'subject',
       'hostname', 'thread', 'name', 'mail', 'homepage'));

@@ -2,8 +2,6 @@
 
 /*
  * Class for menu link migrations: from {menu_links} into {menu_links}.
- * Dependent on this patch for Migrate:
- * http://drupal.org/node/1403044#comment-5740118
  */
 abstract class DrupalMenuLinksMigration extends DrupalMigration {
 

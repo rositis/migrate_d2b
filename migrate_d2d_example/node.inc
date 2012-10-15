@@ -20,9 +20,9 @@ class ExampleImageMigration extends ExampleNodeMigration {
     parent::__construct($arguments);
 
     $this->addFieldMapping('field_credit', 'copyright');
-    $arguments = array('source_path' => '/mnt/source_images');
-    $this->addFieldMapping('field_main_image', 'filename')
-         ->arguments($arguments);
+    $this->addFieldMapping('field_main_image', 'filename');
+    $this->addFieldMapping('field_main_image:source_dir')
+         ->defaultValue('/mnt/source_images');
   }
 
   /**
