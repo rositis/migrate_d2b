@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Implementation of DrupalTermMigration for Drupal 6 sources.
+ */
 
 /**
  * Handling specific to a Drupal 6 source for taxonomy terms.

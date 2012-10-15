@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Summary
+ * Base class for migrating files into Drupal.
  */
 
 /**

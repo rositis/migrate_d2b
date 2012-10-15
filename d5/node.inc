@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Implementation of DrupalNodeMigration for Drupal 5 sources.
+ */
 
 /**
  * Handling specific to a Drupal 5 source for nodes.

@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Implementation of DrupalMenuLinksMigration for Drupal 6 sources.
+ */
 
 /*
  * Class for menu link migrations: from {menu_links} into {menu_links}.
@@ -32,7 +36,7 @@ class DrupalMenuLinks6Migration extends DrupalMenuLinksMigration {
     else {
       $this->addFieldMapping('menu_name', 'menu_name');
     }
-*/
+ */
     $this->addFieldMapping('menu_name', 'menu_name');
 
     // plid is taken from this migration. If the parent hasn't yet been migrated,

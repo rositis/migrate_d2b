@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Base class for migrating menus into Drupal.
+ */
 
 /*
  * Class for menu migrations: from {menu_custom} into {menu_custom}.

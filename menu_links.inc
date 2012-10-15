@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Base class for migrating menu links into Drupal.
+ */
 
 /*
  * Class for menu link migrations: from {menu_links} into {menu_links}.
@@ -80,7 +84,7 @@ abstract class DrupalMenuLinksMigration extends DrupalMigration {
     if (!$migration->sourceValues->plid) {
       return FALSE;
     }
-    $menu_link = array (
+    $menu_link = array(
       'menu_name' => $migration->sourceValues->menu_name,
       'link_path' => 'stub-path',
       'router_path' => 'stub-path',

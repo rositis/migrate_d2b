@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Base class for migrating users into Drupal.
+ */
 
 /**
  * Base class for all user migrations - handles commonalities across all

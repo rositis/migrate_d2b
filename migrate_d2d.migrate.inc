@@ -1,8 +1,9 @@
 <?php
-
 /**
- * Base class for all Drupal-to-Drupal migration classes.
+ * @file
+ * Base classes for all Drupal-to-Drupal migration classes.
  */
+
 abstract class DrupalMigration extends DynamicMigration {
   /**
    * Connection key for the DatabaseConnection holding the source Drupal
@@ -128,7 +129,8 @@ abstract class DrupalMigration extends DynamicMigration {
 
     if (!empty($arguments['format_mappings'])) {
       $this->formatMappings = $arguments['format_mappings'];
-    } else {
+    }
+    else {
       $this->formatMappings = $this->version->getDefaultFormatMappings();
     }
   }
@@ -163,7 +165,8 @@ abstract class DrupalMigration extends DynamicMigration {
     foreach ($format as $format_value) {
       if (isset($format_value) && isset($this->formatMappings[$format_value])) {
         $result[] = $this->formatMappings[$format_value];
-      } else {
+      }
+      else {
         $result[] = NULL;
       }
     }
@@ -317,7 +320,7 @@ abstract class DrupalVersion {
 }
 
 /**
- * Implementation of hook_migrate_api().
+ * Implements hook_migrate_api().
  */
 function migrate_d2d_migrate_api() {
   $api = array('api' => 2);

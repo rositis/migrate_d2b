@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Implementation of DrupalCommentMigration for Drupal 7 sources.
+ */
 
 /**
  * Handling specific to a Drupal 7 source for comments.

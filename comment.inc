@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Base class for migrating comments into Drupal.
+ */
 
 /**
  * Base class for all comment migrations - handles commonalities across all
@@ -104,5 +108,5 @@ abstract class DrupalCommentMigration extends DrupalMigration {
   protected function createStub($migration) {
       return FALSE;
   }
-*/
+ */
 }

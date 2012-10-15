@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Examples of overriding migrate_d2d classes (specifically the D6 node class).
+ */
 
 /**
  * Common mappings for the Drupal 6 node migrations.

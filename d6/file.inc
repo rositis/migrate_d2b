@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Implementation of DrupalFileMigration for Drupal 6 sources.
+ */
 
 class DrupalFile6Migration extends DrupalFileMigration {
   protected $legacyPath;

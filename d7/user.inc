@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Implementation of DrupalUserMigration for Drupal 7 sources.
+ */
 
 class DrupalUser7Migration extends DrupalUserMigration {
   public function __construct(array $arguments) {

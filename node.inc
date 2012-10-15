@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Base class for migrating nodes into Drupal.
+ */
 
 /**
  * Base class for all node migrations - handles commonalities across all

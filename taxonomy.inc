@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Base class for migrating taxonomy terms into Drupal.
+ */
 
 /**
  * Base class for migrations of Drupal taxonomy terms from another Drupal

@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Implementation of DrupalMenuMigration for Drupal 6 sources.
+ */
 
 /*
  * Class for menu migrations: from {menu_custom} into {menu_custom}.

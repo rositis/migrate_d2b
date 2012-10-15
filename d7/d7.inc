@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Implementation of DrupalVersion for Drupal 7 sources.
+ */
 
 class DrupalVersion7 extends DrupalVersion {
   /**

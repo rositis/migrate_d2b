@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Implementation of DrupalVersion for Drupal 5 sources.
+ */
 
 /**
  * Drupal 5 implementations of functions shared among multiple types of objects.
@@ -179,7 +183,8 @@ class DrupalVersion5 extends DrupalVersion {
                      ->select($table, 'f')
                      ->fields('f')
                      ->condition('nid', $entity_id);
-            // There isn't always a delta, @see http://drupal.org/node/1715244
+            // There isn't always a delta,
+            // @see http://drupal.org/node/1715244
             if ($schema->fieldExists($table, 'delta')) {
               $query->orderBy('delta');
             }

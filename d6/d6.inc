@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Implementation of DrupalVersion for Drupal 6 sources.
+ */
 
 /**
  * Drupal 6 implementations of functions shared among multiple types of objects.
@@ -179,7 +183,8 @@ class DrupalVersion6 extends DrupalVersion {
                      ->select($table, 'f')
                      ->fields('f')
                      ->condition('vid', $revision_id);
-            // There isn't always a delta, @see http://drupal.org/node/1715244
+            // There isn't always a delta,
+            // @see http://drupal.org/node/1715244
             if ($schema->fieldExists($table, 'delta')) {
               $query->orderBy('delta');
             }

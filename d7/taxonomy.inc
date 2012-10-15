@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Implementation of DrupalTermMigration for Drupal 7 sources.
+ */
 
 class DrupalTerm7Migration extends DrupalTermMigration {
   public function __construct(array $arguments) {

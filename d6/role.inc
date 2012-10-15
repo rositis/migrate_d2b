@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Implementation of DrupalRoleMigration for Drupal 6 sources.
+ */
 
 /**
  * Handling specific to a Drupal 6 source for roles.
