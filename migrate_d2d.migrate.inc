@@ -83,13 +83,20 @@ abstract class DrupalMigration extends DynamicMigration {
    * source_options - Array to be passed as options to source constructors,
    *  overriding the defaults (map_joinable FALSE, cache_counts TRUE, cache_key
    *  derived from the machine name).
+   * version_class - The name of a custom DrupalVersion class overriding the
+   *  default derived from source_version.
    *
    * @param array $arguments
    */
   public function __construct($arguments) {
     $this->arguments = $arguments;
     $this->sourceVersion = $arguments['source_version'];
-    $version_class = 'DrupalVersion' . $this->sourceVersion;
+    if (isset($arguments['version_class'])) {
+      $version_class = $arguments['version_class'];
+    }
+    else {
+      $version_class = 'DrupalVersion' . $this->sourceVersion;
+    }
     $this->version = new $version_class($arguments);
     if (!isset($arguments['group'])) {
       $arguments['group'] = MigrateGroup::getInstance('default');
