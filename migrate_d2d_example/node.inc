@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Examples of overriding migrate_d2d classes (specifically the D6 node class).
- */
 
 /**
  * Common mappings for the Drupal 6 node migrations.
@@ -21,30 +17,17 @@ abstract class ExampleNodeMigration extends DrupalNode6Migration {
  */
 class ExampleImageMigration extends ExampleNodeMigration {
   public function __construct(array $arguments) {
+    // Add any other data we're pulling into the source row, before the parent
+    // constructor.
+    $this->sourceFields['copyright'] = 'Media copyright notice';
+    $this->sourceFields['filename'] = 'Path of image within mounted filesystem';
+
     parent::__construct($arguments);
 
     $this->addFieldMapping('field_credit', 'copyright');
-    $this->addFieldMapping('field_main_image', 'filename');
-    $this->addFieldMapping('field_main_image:source_dir')
-         ->defaultValue('/mnt/source_images');
-  }
-
-  /**
-   * Implementation of DrupalNodeMigration::sourceFieldList.
-   *
-   * The parent implementation automatically identifies all basic node fields and
-   * CCK fields - here we document any other data we're pulling into the source
-   * row.
-   *
-   * @return array
-   */
-  public function sourceFieldList() {
-    $fields = parent::sourceFieldList();
-    $fields += array(
-      'copyright' => 'Media copyright notice',
-      'filename' => 'Path of image within mounted filesystem',
-    );
-    return $fields;
+    $arguments = array('source_path' => '/mnt/source_images');
+    $this->addFieldMapping('field_main_image', 'filename')
+         ->arguments($arguments);
   }
 
   /**
@@ -78,6 +61,11 @@ class ExampleImageMigration extends ExampleNodeMigration {
 
 class ExampleArticleMigration extends ExampleNodeMigration {
   public function __construct(array $arguments) {
+    // Add any other data we're pulling into the source row, before the parent
+    // constructor.
+    $this->sourceFields['lead_graphic'] = 'Lead graphic string from D6';
+    $this->sourceFields['summary'] = 'Summary string from D6';
+
     parent::__construct($arguments);
 
     $this->addFieldMapping('field_image', 'field_lead_graphic')
@@ -89,20 +77,5 @@ class ExampleArticleMigration extends ExampleNodeMigration {
     $this->addFieldMapping('field_topics', '2')
          ->sourceMigration('Topics')
          ->arguments(array('source_type' => 'tid'));
-  }
-
-  /**
-   * Implementation of DrupalNodeMigration::sourceFieldList.
-   * Add the dynamically-added fields.
-   *
-   * @return array
-   */
-  public function sourceFieldList() {
-    $fields = parent::sourceFieldList();
-    $fields += array(
-      'lead_graphic' => 'Lead graphic string from D6',
-      'summary' => 'Summary string from D6',
-    );
-    return $fields;
   }
 }
