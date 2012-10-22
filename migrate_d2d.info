@@ -19,6 +19,7 @@ files[] = user.inc
 
 ; D5 implementations
 files[] = d5/d5.inc
+files[] = d5/comment.inc
 files[] = d5/file.inc
 files[] = d5/node.inc
 files[] = d5/role.inc
