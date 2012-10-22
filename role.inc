@@ -19,8 +19,8 @@ abstract class DrupalRoleMigration extends DrupalMigration {
 
   /**
    * @param array $arguments
-   * picture_migration - Machine name of a picture migration, used to establish
-   *   dependencies and a sourceMigration for the picture mapping.
+   * role_mappings - Array keyed by the legacy role name, with the destination
+   *  role name as the value.
    */
   public function __construct(array $arguments) {
     parent::__construct($arguments);
