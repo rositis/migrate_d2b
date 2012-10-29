@@ -10,7 +10,7 @@
 function migrate_d2d_ui_migrate_api() {
   $api = array(
     'api' => 2,
-    'wizard_classes' => array('MigrateD2DWizard'),
+    'wizard classes' => array('MigrateD2DWizard'),
   );
   return $api;
 }
