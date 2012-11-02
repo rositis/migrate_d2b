@@ -4,17 +4,6 @@
  * Wizard implementation for Drupal-to-Drupal migrations.
  */
 
-/*
- * Implementation of hook_migrate_api().
- */
-function migrate_d2d_ui_migrate_api() {
-  $api = array(
-    'api' => 2,
-    'wizard classes' => array('MigrateD2DWizard'),
-  );
-  return $api;
-}
-
 class MigrateD2DWizard extends MigrateUIWizard {
   /**
    * Database array for the source Drupal installation.
