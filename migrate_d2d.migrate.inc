@@ -323,6 +323,9 @@ abstract class DrupalVersion {
  * Implements hook_migrate_api().
  */
 function migrate_d2d_migrate_api() {
-  $api = array('api' => 2);
+  $api = array(
+    'api' => 2,
+    'wizard classes' => array('MigrateD2DWizard'),
+  );
   return $api;
 }
