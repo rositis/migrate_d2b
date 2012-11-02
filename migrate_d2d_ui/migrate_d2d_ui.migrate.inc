@@ -529,7 +529,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
    */
   protected function contentTypeFormValidate(&$form_state) {
     // Start with ourselves
-    /* @todo: Skip field mappings for now
     $after = $this->currentStep;
     foreach ($form_state['values']['type'] as $source_type => $dest_type) {
       // For each content type to be migrated, add a step to the wizard.
@@ -538,7 +537,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
         $after = $this->addStep(t('Field mappings for @type',
           array('@type' => $source_type)), 'fieldsForm', $after, $context);
       }
-    }*/
+    }
     $this->typeMappings = $form_state['values']['type'];
   }
 
