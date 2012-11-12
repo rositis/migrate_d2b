@@ -20,10 +20,20 @@ class DrupalFile7Migration extends DrupalFileMigration {
       $this->skipPictures = TRUE;
     }
     parent::__construct($arguments);
+
+    $this->highwaterField = array(
+      'name' => 'timestamp',
+      'alias' => 'f',
+      'type' => 'int',
+    );
+
     $this->addFieldMapping('value', 'uri')
          ->callbacks(array($this, 'fixUri'));
     $this->addFieldMapping('destination_file', 'uri')
       ->callbacks(array($this, 'fixUri'));
+    $this->addFieldMapping('timestamp', 'timestamp');
+
+    $this->addUnmigratedSources(array('status'));
   }
 
   protected function baseQuery() {

@@ -55,18 +55,11 @@ abstract class DrupalFileMigration extends DrupalMigration {
 
     $this->destination = new MigrateDestinationFile('file', $arguments['file_class']);
 
-    $this->highwaterField = array(
-      'name' => 'timestamp',
-      'alias' => 'f',
-      'type' => 'int',
-    );
-
     // Setup common mappings
     $this->addFieldMapping('destination_dir')
          ->defaultValue($arguments['destination_dir']);
     $this->addFieldMapping('source_dir')
          ->defaultValue($arguments['source_dir']);
-    $this->addFieldMapping('timestamp', 'timestamp');
     $this->addFieldMapping('file_replace')
          ->defaultValue(MigrateFile::FILE_EXISTS_REUSE);
     $this->addFieldmapping('preserve_files')
@@ -87,7 +80,6 @@ abstract class DrupalFileMigration extends DrupalMigration {
       $this->addFieldMapping('uid')
            ->defaultValue($default_uid);
     }
-    $this->addUnmigratedSources(array('filename', 'filemime', 'filesize',
-                                'status'));
+    $this->addUnmigratedSources(array('filename', 'filemime', 'filesize'));
   }
 }

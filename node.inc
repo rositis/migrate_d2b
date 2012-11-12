@@ -78,8 +78,6 @@ abstract class DrupalNodeMigration extends DrupalMigration {
     $this->addSimpleMappings(array('title', 'body', 'status', 'created', 'changed',
       'comment', 'promote', 'sticky'));
 
-    $this->addFieldMapping('language', 'language')
-         ->defaultValue($this->defaultLanguage);
     $this->addFieldMapping('body:language')
          ->defaultValue($this->defaultLanguage);
 

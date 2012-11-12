@@ -99,13 +99,13 @@ class DrupalVersion5 extends DrupalVersion {
                  ->fields('i', array('label'))
                  ->condition('type_name', $bundle);
         $query->innerJoin('node_field', 'f', 'i.field_name = f.field_name');
-        $query->fields('f', array('field_name', 'type', 'db_columns', 'multiple', 'db_storage'));
+        $query->fields('f', array('field_name', 'type', 'multiple', 'db_storage'));
         $result = $query->execute();
         foreach ($result as $row) {
           $field_name = trim($row->field_name);
-          $db_columns = $db_columns = !empty($row->db_columns) ? unserialize($row->db_columns) : array();
+          $db_columns = $this->getFieldTypeColumns($row->type);
           $columns = array();
-          foreach ($db_columns as $column_name => $column_info) {
+          foreach ($db_columns as $column_name) {
             $display_name = $field_name . ':' . $column_name;
             $column_name = $field_name . '_' . $column_name;
             $columns[$display_name] = $column_name;
@@ -131,6 +131,37 @@ class DrupalVersion5 extends DrupalVersion {
         $this->sourceFieldInfo[$row->vid] = array('label' => $row->name, 'type' => 'taxonomy_term');
       }
       migrate_instrument_stop('DrupalVersion5::sourceFieldInfo');
+    }
+  }
+
+  protected function getFieldTypeColumns($type) {
+    $type_columns = array(
+      'ca_phone' => array('value'),
+      'content_taxonomy' => array('value'),
+      // @todo: How to handle optional columns?
+      'date' => array('value'/*, 'value2', 'offset', 'offset2', 'timezone'*/),
+      'datestamp' => array('value'/*, 'value2', 'offset', 'offset2', 'timezone'*/),
+      'emaudio' => array('embed', 'value', 'provider', 'data'),
+      'file' => array('fid', 'description', 'list'),
+      'fivestar' => array('rating', 'target'),
+      'flickrfield' => array('id', 'type', 'nsid'),
+      'image' => array('fid', 'title', 'alt'),
+      'image_ncck' => array('embed', 'value', 'provider', 'data'),
+      'link' => array('url', 'title', 'attributes'),
+      'linkimage' => array('fid', 'title', 'alt', 'url'),
+      'nodereference' => array('nid'),
+      'number_decimal' => array('value'),
+      'number_integer' => array('value'),
+      'text' => array('value', 'format'),
+      'userreference' => array('uid'),
+      'video_cck' => array('embed', 'value', 'provider', 'data'),
+      'viewfield' => array('vname', 'vargs'),
+    );
+    if (isset($type_columns[$type])) {
+      return $type_columns[$type];
+    }
+    else {
+      return array('value');
     }
   }
 
@@ -188,7 +219,8 @@ class DrupalVersion5 extends DrupalVersion {
             if ($schema->fieldExists($table, 'delta')) {
               $query->orderBy('delta');
             }
-            $result = $query->execute();            foreach ($result as $field_row) {
+            $result = $query->execute();
+            foreach ($result as $field_row) {
               $i = 0;
               foreach ($this->sourceFieldInfo[$field_name]['columns'] as $display_name => $column_name) {
                 if ($i++ == 0) {
