@@ -17,6 +17,9 @@ class DrupalNode7Migration extends DrupalNodeMigration {
     $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields, NULL,
       $this->sourceOptions);
 
+    $this->addFieldMapping('language', 'language')
+         ->defaultValue($this->defaultLanguage);
+
     $this->addFieldMapping('body:summary', 'body:summary');
     $this->addFieldMapping('body:format', 'body:format')
          ->callbacks(array($this, 'mapFormat'));

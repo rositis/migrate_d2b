@@ -96,16 +96,16 @@ class DrupalVersion5 extends DrupalVersion {
             ->schema()->tableExists('node_field_instance')) {
         $query = Database::getConnection('default', $this->arguments['source_connection'])
                  ->select('node_field_instance', 'i')
-                 ->fields('i', array('label'))
+                 ->fields('i', array('label', 'type_name'))
                  ->condition('type_name', $bundle);
         $query->innerJoin('node_field', 'f', 'i.field_name = f.field_name');
-        $query->fields('f', array('field_name', 'type', 'db_columns', 'multiple', 'db_storage'));
+        $query->fields('f', array('field_name', 'type', 'multiple', 'db_storage'));
         $result = $query->execute();
         foreach ($result as $row) {
           $field_name = trim($row->field_name);
-          $db_columns = $db_columns = !empty($row->db_columns) ? unserialize($row->db_columns) : array();
+          $db_columns = $this->getFieldTypeColumns($row);
           $columns = array();
-          foreach ($db_columns as $column_name => $column_info) {
+          foreach ($db_columns as $column_name) {
             $display_name = $field_name . ':' . $column_name;
             $column_name = $field_name . '_' . $column_name;
             $columns[$display_name] = $column_name;
@@ -132,6 +132,42 @@ class DrupalVersion5 extends DrupalVersion {
       }
       migrate_instrument_stop('DrupalVersion5::sourceFieldInfo');
     }
+  }
+
+  /**
+   * Detect what database columns are available for the given field.
+   *
+   * @param $field_info
+   *  Info describing the incoming field. We specifically are looking at the
+   *  field_name, type_name, and db_storage values.
+   *
+   * @return array
+   *  List of column suffixes relevant to the field ('value', 'fid', etc.).
+   */
+  protected function getFieldTypeColumns($field_info) {
+    $field_name = $field_info->field_name;
+    if ($field_info->db_storage) {
+      $table_name = 'content_type_' . $field_info->type_name;
+    }
+    else {
+      $table_name = 'content_' . $field_name;
+    }
+    $row = Database::getConnection('default', $this->arguments['source_connection'])
+                   ->select($table_name, 't')
+                   ->fields('t')
+                   ->range(0, 1)
+                   ->execute()
+                   ->fetchObject();
+    $type_columns = array();
+    if ($row) {
+      foreach ($row as $column_name => $column_value) {
+        if (!strncmp($field_name, $column_name, strlen($field_name))) {
+          $type_columns[] = substr($column_name, strlen($field_name) + 1);
+        }
+      }
+    }
+
+    return $type_columns;
   }
 
   /**
@@ -188,7 +224,8 @@ class DrupalVersion5 extends DrupalVersion {
             if ($schema->fieldExists($table, 'delta')) {
               $query->orderBy('delta');
             }
-            $result = $query->execute();            foreach ($result as $field_row) {
+            $result = $query->execute();
+            foreach ($result as $field_row) {
               $i = 0;
               foreach ($this->sourceFieldInfo[$field_name]['columns'] as $display_name => $column_name) {
                 if ($i++ == 0) {

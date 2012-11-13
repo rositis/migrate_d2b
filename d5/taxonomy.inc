@@ -9,6 +9,7 @@
  */
 class DrupalTerm5Migration extends DrupalTermMigration {
   public function __construct(array $arguments) {
+    $this->sourceFields['parent'] = t('Term: Parent term');
     parent::__construct($arguments);
 
     // Drupal 5 had no format for terms.

@@ -31,6 +31,9 @@ class DrupalNode6Migration extends DrupalNodeMigration {
     $this->source = new MigrateDrupal6SourceSQL($query, $this->sourceFields, NULL,
       $this->sourceOptions);
 
+    $this->addFieldMapping('language', 'language')
+         ->defaultValue($this->defaultLanguage);
+
     $this->addFieldMapping('body:summary', 'teaser');
     $this->addFieldMapping('body:format', 'format')
          ->callbacks(array($this, 'mapFormat'));

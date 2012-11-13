@@ -9,10 +9,18 @@ class DrupalFile6Migration extends DrupalFileMigration {
 
   public function __construct(array $arguments) {
     parent::__construct($arguments);
+
+    $this->highwaterField = array(
+      'name' => 'timestamp',
+      'alias' => 'f',
+      'type' => 'int',
+    );
+
     $this->addFieldMapping('value', 'filepath')
          ->callbacks(array($this, 'fixUri'));
     $this->addFieldMapping('destination_file', 'filepath')
       ->callbacks(array($this, 'fixUri'));
+    $this->addFieldMapping('timestamp', 'timestamp');
 
     $this->legacyPath = unserialize(
       Database::getConnection('default', $this->sourceConnection)
@@ -25,6 +33,8 @@ class DrupalFile6Migration extends DrupalFileMigration {
     if (substr($this->legacyPath, 0, 2) == './') {
       $this->legacyPath = substr($this->legacyPath, 2);
     }
+
+    $this->addUnmigratedSources(array('status'));
   }
 
   protected function query() {

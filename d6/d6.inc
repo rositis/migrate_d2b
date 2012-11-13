@@ -210,38 +210,41 @@ class DrupalVersion6 extends DrupalVersion {
       if ($this->entityType == 'user') {
         foreach ($this->profileTypes as $type) {
           $cck_table = 'content_type_' . $type;
-          $query = Database::getConnection('default', $this->arguments['source_connection'])
-                   ->select($cck_table, 'f')
-                   ->condition('vid', $revision_id);
-          // The main column for the field should be rendered with
-          // the field name, not the column name (e.g., field_foo rather
-          // than field_foo_value).
-          $fix_field_names = array();
-          foreach ($this->sourceFieldInfo as $field_name => $info) {
-            if (isset($info['columns']) && !$info['multiple'] && $info['db_storage']) {
-              $i = 0;
-              foreach ($info['columns'] as $display_name => $column_name) {
-                if ($i++ == 0) {
-                  $query->addField('f', $column_name, $field_name);
-                }
-                else {
-                  // The database API won't allow colons in column aliases, so we
-                  // will accept the default alias, and fix up the field names later.
-                  // Remember how to translate the field names.
-                  $clean_name = str_replace(':', '_', $display_name);
-                  $fix_field_names[$clean_name] = $display_name;
-                  $query->addField('f', $column_name);
+          if (Database::getConnection('default', $this->arguments['source_connection'])
+                    ->schema()->tableExists($cck_table)) {
+            $query = Database::getConnection('default', $this->arguments['source_connection'])
+                     ->select($cck_table, 'f')
+                     ->condition('vid', $revision_id);
+            // The main column for the field should be rendered with
+            // the field name, not the column name (e.g., field_foo rather
+            // than field_foo_value).
+            $fix_field_names = array();
+            foreach ($this->sourceFieldInfo as $field_name => $info) {
+              if (isset($info['columns']) && !$info['multiple'] && $info['db_storage']) {
+                $i = 0;
+                foreach ($info['columns'] as $display_name => $column_name) {
+                  if ($i++ == 0) {
+                    $query->addField('f', $column_name, $field_name);
+                  }
+                  else {
+                    // The database API won't allow colons in column aliases, so we
+                    // will accept the default alias, and fix up the field names later.
+                    // Remember how to translate the field names.
+                    $clean_name = str_replace(':', '_', $display_name);
+                    $fix_field_names[$clean_name] = $display_name;
+                    $query->addField('f', $column_name);
+                  }
                 }
               }
             }
-          }
-          $data_row = $query->execute()->fetchObject();
-          if (is_object($data_row)) {
-            foreach ($data_row as $name => $value) {
-              if (isset($fix_field_names[$name])) {
-                $name = $fix_field_names[$name];
+            $data_row = $query->execute()->fetchObject();
+            if (is_object($data_row)) {
+              foreach ($data_row as $name => $value) {
+                if (isset($fix_field_names[$name])) {
+                  $name = $fix_field_names[$name];
+                }
+                $row->$name = $value;
               }
-              $row->$name = $value;
             }
           }
         }

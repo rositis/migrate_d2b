@@ -9,12 +9,26 @@
  */
 class DrupalNode5Migration extends DrupalNodeMigration {
   /**
+   * Translation from field names assigned when executing the query to our
+   * subfield notation.
+   *
+   * @var array
+   *  key: DB-compatible name (e.g., field_buy_link_title).
+   *  value: Subfield notation (e.g., field_buy_link:title).
+   */
+  protected $fixFieldNames = array();
+
+  /**
    * @param array $arguments
    */
   public function __construct(array $arguments) {
     parent::__construct($arguments);
 
-    $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields, NULL,
+    $query = $this->query();
+
+    $this->sourceOptions['fix_field_names'] = $this->fixFieldNames;
+
+    $this->source = new MigrateDrupal5SourceSQL($query, $this->sourceFields, NULL,
       $this->sourceOptions);
 
     $this->addFieldMapping('body:summary', 'teaser');
@@ -55,12 +69,63 @@ class DrupalNode5Migration extends DrupalNodeMigration {
               $query->addField('f', $column_name, $field_name);
             }
             else {
-              $query->addField('f', $column_name, $display_name);
+              // The database API won't allow colons in column aliases, so we
+              // will accept the default alias, and fix up the field names later.
+              // Remember how to translate the field names.
+              $clean_name = str_replace(':', '_', $display_name);
+              $this->fixFieldNames[$clean_name] = $display_name;
+              $query->addField('f', $column_name);
             }
           }
         }
       }
     }
     return $query;
+  }
+
+  public function prepareRow($row) {
+    if (parent::prepareRow($row) === FALSE) {
+      return FALSE;
+    }
+    // Convert the default field names to the nice-looking ones.
+    foreach ($this->fixFieldNames as $clean => $display) {
+      if (isset($row->$clean)) {
+        $row->$display = $row->$clean;
+        unset($row->$clean);
+      }
+    }
+  }
+}
+
+/**
+ * We override the default SQL source class just so we can clean up subfield
+ * names for the UI.
+ */
+class MigrateDrupal5SourceSQL extends MigrateSourceSQL {
+  /**
+   * Translation from field names assigned when executing the query to our
+   * subfield notation.
+   *
+   * @var array
+   *  key: DB-compatible name (e.g., field_buy_link_title).
+   *  value: Subfield notation (e.g., field_buy_link:title).
+   */
+  public $fixFieldNames = array();
+
+  public function __construct(SelectQueryInterface $query, array $fields = array(),
+        SelectQueryInterface $count_query = NULL, array $options = array()) {
+    $this->fixFieldNames = $options['fix_field_names'];
+    parent::__construct($query, $fields, $count_query, $options);
+  }
+
+  public function fields() {
+    $fields = parent::fields();
+    // Remove the default subfield names in favor of the nice-looking ones.
+    foreach ($this->fixFieldNames as $clean => $display) {
+      if (isset($fields[$clean])) {
+        unset($fields[$clean]);
+      }
+    }
+    return $fields;
   }
 }

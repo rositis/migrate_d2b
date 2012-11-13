@@ -25,13 +25,15 @@ class DrupalFile5Migration extends DrupalFileMigration {
     if (substr($this->legacyPath, 0, 2) == './') {
       $this->legacyPath = substr($this->legacyPath, 2);
     }
+
+    $this->addUnmigratedDestinations(array('timestamp'));
+    $this->addUnmigratedSources(array('nid'));
   }
 
   protected function query() {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('files', 'f')
-             ->fields('f')
-             ->orderBy('timestamp');
+             ->fields('f');
     return $query;
   }
 
