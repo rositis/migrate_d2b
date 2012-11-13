@@ -96,14 +96,14 @@ class DrupalVersion5 extends DrupalVersion {
             ->schema()->tableExists('node_field_instance')) {
         $query = Database::getConnection('default', $this->arguments['source_connection'])
                  ->select('node_field_instance', 'i')
-                 ->fields('i', array('label'))
+                 ->fields('i', array('label', 'type_name'))
                  ->condition('type_name', $bundle);
         $query->innerJoin('node_field', 'f', 'i.field_name = f.field_name');
         $query->fields('f', array('field_name', 'type', 'multiple', 'db_storage'));
         $result = $query->execute();
         foreach ($result as $row) {
           $field_name = trim($row->field_name);
-          $db_columns = $this->getFieldTypeColumns($row->type);
+          $db_columns = $this->getFieldTypeColumns($row);
           $columns = array();
           foreach ($db_columns as $column_name) {
             $display_name = $field_name . ':' . $column_name;
@@ -134,35 +134,40 @@ class DrupalVersion5 extends DrupalVersion {
     }
   }
 
-  protected function getFieldTypeColumns($type) {
-    $type_columns = array(
-      'ca_phone' => array('value'),
-      'content_taxonomy' => array('value'),
-      // @todo: How to handle optional columns?
-      'date' => array('value'/*, 'value2', 'offset', 'offset2', 'timezone'*/),
-      'datestamp' => array('value'/*, 'value2', 'offset', 'offset2', 'timezone'*/),
-      'emaudio' => array('embed', 'value', 'provider', 'data'),
-      'file' => array('fid', 'description', 'list'),
-      'fivestar' => array('rating', 'target'),
-      'flickrfield' => array('id', 'type', 'nsid'),
-      'image' => array('fid', 'title', 'alt'),
-      'image_ncck' => array('embed', 'value', 'provider', 'data'),
-      'link' => array('url', 'title', 'attributes'),
-      'linkimage' => array('fid', 'title', 'alt', 'url'),
-      'nodereference' => array('nid'),
-      'number_decimal' => array('value'),
-      'number_integer' => array('value'),
-      'text' => array('value', 'format'),
-      'userreference' => array('uid'),
-      'video_cck' => array('embed', 'value', 'provider', 'data'),
-      'viewfield' => array('vname', 'vargs'),
-    );
-    if (isset($type_columns[$type])) {
-      return $type_columns[$type];
+  /**
+   * Detect what database columns are available for the given field.
+   *
+   * @param $field_info
+   *  Info describing the incoming field. We specifically are looking at the
+   *  field_name, type_name, and db_storage values.
+   *
+   * @return array
+   *  List of column suffixes relevant to the field ('value', 'fid', etc.).
+   */
+  protected function getFieldTypeColumns($field_info) {
+    $field_name = $field_info->field_name;
+    if ($field_info->db_storage) {
+      $table_name = 'content_type_' . $field_info->type_name;
     }
     else {
-      return array('value');
+      $table_name = 'content_' . $field_name;
     }
+    $row = Database::getConnection('default', $this->arguments['source_connection'])
+                   ->select($table_name, 't')
+                   ->fields('t')
+                   ->range(0, 1)
+                   ->execute()
+                   ->fetchObject();
+    $type_columns = array();
+    if ($row) {
+      foreach ($row as $column_name => $column_value) {
+        if (!strncmp($field_name, $column_name, strlen($field_name))) {
+          $type_columns[] = substr($column_name, strlen($field_name) + 1);
+        }
+      }
+    }
+
+    return $type_columns;
   }
 
   /**
