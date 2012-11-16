@@ -105,6 +105,10 @@ class DrupalNode6Migration extends DrupalNodeMigration {
         unset($row->$clean);
       }
     }
+    // Don't populate summary if the teaser matches the generated summary.
+    if (empty($row->teaser) || $row->teaser != text_summary($row->body)) {
+      $row->teaser = '';
+    }
   }
 }
 
