@@ -219,12 +219,14 @@ class DrupalVersion6 extends DrupalVersion {
             // the field name, not the column name (e.g., field_foo rather
             // than field_foo_value).
             $fix_field_names = array();
+            $field_found = FALSE;
             foreach ($this->sourceFieldInfo as $field_name => $info) {
               if (isset($info['columns']) && !$info['multiple'] && $info['db_storage']) {
                 $i = 0;
                 foreach ($info['columns'] as $display_name => $column_name) {
                   if ($i++ == 0) {
                     $query->addField('f', $column_name, $field_name);
+                    drush_print("adding $column_name as $field_name");
                   }
                   else {
                     // The database API won't allow colons in column aliases, so we
@@ -233,17 +235,21 @@ class DrupalVersion6 extends DrupalVersion {
                     $clean_name = str_replace(':', '_', $display_name);
                     $fix_field_names[$clean_name] = $display_name;
                     $query->addField('f', $column_name);
+                    drush_print("adding $column_name");
                   }
+                  $field_found = TRUE;
                 }
               }
             }
-            $data_row = $query->execute()->fetchObject();
-            if (is_object($data_row)) {
-              foreach ($data_row as $name => $value) {
-                if (isset($fix_field_names[$name])) {
-                  $name = $fix_field_names[$name];
+            if ($field_found) {
+              $data_row = $query->execute()->fetchObject();
+              if (is_object($data_row)) {
+                foreach ($data_row as $name => $value) {
+                  if (isset($fix_field_names[$name])) {
+                    $name = $fix_field_names[$name];
+                  }
+                  $row->$name = $value;
                 }
-                $row->$name = $value;
               }
             }
           }
