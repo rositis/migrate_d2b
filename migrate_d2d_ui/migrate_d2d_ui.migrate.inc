@@ -592,6 +592,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
       'source_version' => $this->sourceVersion,
       'source_connection' => $this->groupName . '_legacy',
       'source_database' => $this->database,
+      'source_system' => t('Drupal @version', array('@version' => $this->sourceVersion)),
     );
 
     $message = t('<p>Please review your import configuration. When you submit this
