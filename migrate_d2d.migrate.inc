@@ -90,45 +90,47 @@ abstract class DrupalMigration extends DynamicMigration {
    * @param array $arguments
    */
   public function __construct($arguments) {
-    $this->arguments = $arguments;
-    $this->sourceVersion = $arguments['source_version'];
-    if (isset($arguments['version_class'])) {
-      $version_class = $arguments['version_class'];
+    $group = MigrateGroup::getInstance($arguments['group_name']);
+    $group_arguments = $group->getArguments();
+    $this->arguments = $group_arguments + $arguments;
+    $this->sourceVersion = $this->arguments['source_version'];
+    if (isset($this->arguments['version_class'])) {
+      $version_class = $this->arguments['version_class'];
     }
     else {
       $version_class = 'DrupalVersion' . $this->sourceVersion;
     }
-    $this->version = new $version_class($arguments);
-    if (!isset($arguments['group'])) {
-      $arguments['group'] = MigrateGroup::getInstance('default');
+    $this->version = new $version_class($this->arguments);
+    if (!isset($this->arguments['group'])) {
+      $this->arguments['group'] = MigrateGroup::getInstance($this->arguments['group_name']);
     }
-    elseif (!is_object($arguments['group'])) {
-      $arguments['group'] = MigrateGroup::getInstance($arguments['group']);
+    elseif (!is_object($this->arguments['group'])) {
+      $this->arguments['group'] = MigrateGroup::getInstance($this->arguments['group']);
     }
-    parent::__construct($arguments['group']);
-    $this->sourceConnection = $arguments['source_connection'];
-    if (!empty($arguments['source_database'])) {
-      Database::addConnectionInfo($this->sourceConnection, 'default', $arguments['source_database']);
+    parent::__construct($this->arguments['group']);
+    $this->sourceConnection = $this->arguments['source_connection'];
+    if (!empty($this->arguments['source_database'])) {
+      Database::addConnectionInfo($this->sourceConnection, 'default', $this->arguments['source_database']);
     }
-    if (!empty($arguments['source_type'])) {
-      $this->sourceType = $arguments['source_type'];
+    if (!empty($this->arguments['source_type'])) {
+      $this->sourceType = $this->arguments['source_type'];
     }
-    $this->description = $arguments['description'];
-    if (!empty($arguments['dependencies'])) {
-      $this->dependencies = $arguments['dependencies'];
+    $this->description = $this->arguments['description'];
+    if (!empty($this->arguments['dependencies'])) {
+      $this->dependencies = $this->arguments['dependencies'];
     }
-    if (!empty($arguments['soft_dependencies'])) {
-      $this->softDependencies = $arguments['soft_dependencies'];
+    if (!empty($this->arguments['soft_dependencies'])) {
+      $this->softDependencies = $this->arguments['soft_dependencies'];
     }
     $this->sourceOptions = array('map_joinable' => FALSE, 'cache_counts' => TRUE,
                      'cache_key' => 'migrate_' . $this->machineName);
-    if (!empty($arguments['source_options'])) {
+    if (!empty($this->arguments['source_options'])) {
       $this->sourceOptions = array_merge($this->sourceOptions,
-                                         $arguments['source_options']);
+                                         $this->arguments['source_options']);
     }
 
-    if (!empty($arguments['format_mappings'])) {
-      $this->formatMappings = $arguments['format_mappings'];
+    if (!empty($this->arguments['format_mappings'])) {
+      $this->formatMappings = $this->arguments['format_mappings'];
     }
     else {
       $this->formatMappings = $this->version->getDefaultFormatMappings();

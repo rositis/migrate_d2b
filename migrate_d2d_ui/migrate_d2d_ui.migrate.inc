@@ -70,7 +70,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
    */
   public function __construct() {
     parent::__construct();
-    $this->addStep(t('Overview'), 'overviewForm');
     $this->addStep(t('Credentials'), 'sourceDataForm');
     $this->addStep(t('Users'), 'userForm');
     $this->addStep(t('Taxonomy'), 'taxonomyForm');
@@ -88,77 +87,29 @@ class MigrateD2DWizard extends MigrateUIWizard {
   }
 
   /**
-   * The first step of the wizard - explain what we're doing, and get the
-   * migration group.
-   *
-   * @return array
+   * Second step - find out how to get the source data.
    */
-  protected function overviewForm() {
-    $form['overview'] = array(
-      '#prefix' => '<p>',
-      '#markup' => t('This wizard supports importing into your Drupal site ' .
-            'from another Drupal site (running Drupal version 5, 6, or 7). To be ' .
-            'able to use this wizard, you must have the address and credentials of ' .
-            'a database containing the full source Drupal site.'),
-      '#suffix' => '</p>',
-    );
+  public function sourceDataForm(&$form_state) {
     $form['description'] = array(
       '#prefix' => '<p>',
       '#markup' => t('You will be led through a series of steps, allowing you to ' .
         'customize what will be imported into Drupal and how it will be mapped. ' .
-        'At the end of this process, a set of import steps (called <em>Migrations</em>) '.
-        'are generated and you will be left at the Migrate dashboard, from which ' .
-        'you can perform the imports, monitor their progress, roll them back, etc.'),
+        'At the end of this process, an import job will be '.
+        'generated and you will be left at the Import dashboard, from which ' .
+        'you can perform the import, monitor its progress, roll it back, etc.'),
       '#suffix' => '</p>',
     );
 
-    $form['group_name'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Unique name'),
-      '#description' => t('Provide a unique alphanumeric name for this import. It ' .
-        'will be used to prefix and group the generated migrations.'),
-      '#size' => 16,
-      '#maxlength' => 16,
-      '#required' => TRUE,
-      '#default_value' => $this->groupName,
-    );
-    return $form;
-  }
-
-  /**
-  * Make sure the migration group is alphanumeric, and save it.
-  *
-  * @param array $form_state
-  */
-  protected function overviewFormValidate(&$form_state) {
-    $this->groupName = trim($form_state['values']['group_name']);
-    if (!preg_match('|^[[:alnum:]]+$|', $this->groupName)) {
-      form_set_error('group_name',
-        t('The name for your import, %name, must be alphanumeric.',
-          array('%name' => $this->groupName)));
-    }
-  }
-
-  /**
-   * Second step - find out how to get the source data.
-   */
-  public function sourceDataForm() {
     $form['overview'] = array(
       '#prefix' => '<p>',
-      '#markup' => t('External Drupal sites can be imported into Drupal using this form.
-        Please provide database credentials for the external Drupal site. It is recommended
-        that this not be the same database user as is used by the site, but
-        an user with read-only privileges.'),
+      '#markup' => t('External Drupal sites (versions 6 or 7) can be imported ' .
+       'into Drupal using this form. Please provide database credentials for the ' .
+       'external Drupal site. It is recommended that this not be the same database ' .
+       'user as is used by the site, but a user with read-only privileges.'),
       '#suffix' => '</p>',
     );
 
-    $form['description'] = array(
-      '#prefix' => '<p>',
-      '#markup' => t('To import from an external Drupal site, enter your credentials here.'),
-      '#suffix' => '</p>',
-    );
-
-    // Stolen from includes/install.core.inc, install_settings_form()
+    // Copied from includes/install.core.inc, install_settings_form()
     require_once DRUPAL_ROOT . '/includes/install.inc';
     $drivers = drupal_get_database_types();
     $drivers_keys = array_keys($drivers);
@@ -237,6 +188,21 @@ class MigrateD2DWizard extends MigrateUIWizard {
         else {
           $this->sourceVersion = '6';
         }
+
+        // Use the site_name as the group name
+        $site_name = $this->connection()->select('variable', 'v')
+                     ->fields('v', array('value'))
+                     ->condition('name', 'site_name')
+                     ->execute()
+                     ->fetchField();
+        $site_name = unserialize($site_name);
+        if ($site_name) {
+          $this->groupTitle = $site_name;
+          $this->groupName = preg_replace('/[^A-Za-z0-9]/', '', $site_name);
+        }
+        else {
+          $this->groupName = $this->groupTitle = 'd' . $this->sourceVersion;
+        }
       }
       else {
         form_set_error('driver', t('The source database does not appear to be a Drupal database.'));
@@ -252,7 +218,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
   /**
    * Present information and options around user migration.
    */
-  protected function userForm() {
+  protected function userForm(&$form_state) {
     $form['overview'] = array(
       '#prefix' => '<p>',
       '#markup' => t('User accounts other than the admin account (user ID 1)
@@ -333,12 +299,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
    */
   protected function userFormValidate(&$form_state) {
     if ($form_state['values']['do_migration']) {
-      $arguments = array(
-        'description' => t('Migration of users from Drupal @version',
-                 array('@version' => $this->sourceVersion)),
-      );
-      $this->addMigration($this->groupName . 'User',
-        "DrupalUser{$this->sourceVersion}Migration", $arguments);
       $this->userMigration = TRUE;
     }
     else {
@@ -349,7 +309,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
   /**
    * Choose what source vocabularies to import into what destination vocabularies.
    */
-  protected function taxonomyForm() {
+  protected function taxonomyForm(&$form_state) {
     if ($this->connection()->schema()->tableExists('taxonomy_vocabulary')) {
       $vocab_table = 'taxonomy_vocabulary';
       $term_table = 'taxonomy_term_data';
@@ -450,7 +410,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
   /**
    * Form for mapping source content (node) types to destination types.
    */
-  protected function contentTypeForm() {
+  protected function contentTypeForm(&$form_state) {
     $type_count = $this->connection()->select('node_type', 't')
                     ->fields('t', array('type', 'name'))
                     ->countQuery()
@@ -544,7 +504,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
   /**
    * Form for mapping fields between two specific content types.
    */
-  function fieldsForm() {
+  function fieldsForm(&$form_state) {
     $type_mapping = $this->currentStep->getContext();
     $source_type = $type_mapping['source_type'];
     $dest_type = $type_mapping['dest_type'];
@@ -627,10 +587,17 @@ class MigrateD2DWizard extends MigrateUIWizard {
    * Show the user what they've chosen to migrate, and give them one last chance
    * to say yay or nay.
    */
-  protected function reviewForm() {
-    $message = t('<p>Please review your migration configuration. When you submit this
-      form, migration processes will be created and you will be left at the
-      migration dashboard.</p>');
+  protected function reviewForm(&$form_state) {
+    $this->groupArguments = array(
+      'source_version' => $this->sourceVersion,
+      'source_connection' => $this->groupName . '_legacy',
+      'source_database' => $this->database,
+    );
+
+    $message = t('<p>Please review your import configuration. When you submit this
+      form, an import job containing an import task for each type of item to be
+      imported will be created and you will be left at the
+      import dashboard.</p>');
 
     $form['description'] = array(
       '#prefix' => '<div>',
@@ -648,6 +615,11 @@ class MigrateD2DWizard extends MigrateUIWizard {
       $migrations .= t('<li>%count user accounts (omitting the administrative account ' .
         '%admin) will be imported.</li>',
         array('%admin' => $admin_name, '%count' => $this->userCount));
+      $arguments = array(
+        'description' => t('Migration of users from Drupal @version',
+                 array('@version' => $this->sourceVersion)),
+      );
+      $this->addMigration('User', "DrupalUser{$this->sourceVersion}Migration", $arguments);
     }
     else {
       $migrations .= t('<li>User accounts will not be migrated</li>');
@@ -671,19 +643,39 @@ class MigrateD2DWizard extends MigrateUIWizard {
         $migrations .= t('<li>The %vocabulary vocabulary will not be imported.</li>',
           array('%vocabulary' => $source_vocabulary));
       }
-      elseif ($destination_name == '0') {
-        $migrations .= t('<li>The %vocabulary vocabulary will be created with %count.</li>',
-          array('%vocabulary' => $source_vocabulary, '%count' => $count));
-      }
       else {
-        $destination_vocabulary = db_select('taxonomy_vocabulary', 'v')
-                                  ->fields('v', array('name'))
-                                  ->condition('machine_name', $destination_name)
-                                  ->execute()
-                                  ->fetchField();
-        $migrations .= t('<li>%count from %source will be imported into the %destination vocabulary.</li>',
-          array('%source' => $source_vocabulary, '%destination' => $destination_vocabulary,
-            '%count' => $count));
+        if ($destination_name == '0') {
+          $migrations .= t('<li>The %vocabulary vocabulary will be created with %count.</li>',
+                           array('%vocabulary' => $source_vocabulary, '%count' => $count));
+        }
+        else {
+          $destination_vocabulary = db_select('taxonomy_vocabulary', 'v')
+            ->fields('v', array('name'))
+            ->condition('machine_name', $destination_name)
+            ->execute()
+            ->fetchField();
+          $migrations .= t('<li>%count from %source will be imported into the %destination vocabulary.</li>',
+                           array('%source' => $source_vocabulary, '%destination' => $destination_vocabulary,
+                             '%count' => $count));
+        }
+        $arguments = array(
+          'destination_vocabulary' => $destination_name,
+          'description' => t('Migration of @vocabulary terms from Drupal @version',
+                   array('@vocabulary' => $source_vocabulary,
+                         '@version' => $this->sourceVersion)),
+        );
+        if ($this->sourceVersion == 7) {
+          $arguments['source_vocabulary'] = $this->connection()->select($vocab_table, 'v')
+                                            ->fields('v', array('machine_name'))
+                                            ->condition('vid', $source_vid)
+                                            ->execute()
+                                            ->fetchField();
+        }
+        else {
+          $arguments['source_vocabulary'] = $source_vid;
+        }
+        $this->addMigration('Term' . $arguments['source_vocabulary'],
+                            "DrupalTerm{$this->sourceVersion}Migration", $arguments);
       }
     }
 
@@ -698,18 +690,32 @@ class MigrateD2DWizard extends MigrateUIWizard {
         $migrations .= t('<li>The %type content type will not be imported.</li>',
           array('%type' => $source_name));
       }
-      elseif ($destination_type == '0') {
-        $migrations .= t('<li>The %type content type will be created with %count.</li>',
-          array('%type' => $source_name, '%count' => $count));
-      }
       else {
-        $destination_type = db_select('node_type', 'nt')
-                                  ->fields('nt', array('name'))
-                                  ->condition('type', $destination_type)
-                                  ->execute()
-                                  ->fetchField();
-        $migrations .= t('<li>%count from %source will be imported into the %destination content type.</li>',
-          array('%count' => $count, '%source' => $source_name, '%destination' => $destination_type));
+        if ($destination_type == '0') {
+          $migrations .= t('<li>The %type content type will be created with %count.</li>',
+                           array('%type' => $source_name, '%count' => $count));
+        }
+        else {
+          $destination_type = db_select('node_type', 'nt')
+            ->fields('nt', array('name'))
+            ->condition('type', $destination_type)
+            ->execute()
+            ->fetchField();
+          $migrations .= t('<li>%count from %source will be imported into the %destination content type.</li>',
+                           array('%count' => $count, '%source' => $source_name, '%destination' => $destination_type));
+        }
+        $arguments = array(
+          'source_type' => $source_type,
+          'destination_type' => $destination_type,
+          'description' => t('Migration of @source_type nodes from Drupal @version',
+                   array('@vocabulary' => $source_name,
+                         '@version' => $this->sourceVersion)),
+        );
+        if ($this->userMigration) {
+          $arguments['user_migration'] = $this->groupName . 'User';
+        }
+        $this->addMigration('Node' . $arguments['source_type'],
+                            "DrupalNode{$this->sourceVersion}Migration", $arguments);
       }
     }
 
@@ -773,25 +779,5 @@ class MigrateD2DWizard extends MigrateUIWizard {
       $connection = Database::getConnection('default', $connection_key);
     }
     return $connection;
-  }
-
-  /**
-   * Record all the information necessary to register a migration when this is
-   * all over.
-   *
-   * @param string $machine_name
-   *  Machine name for the migration class.
-   * @param string $class_name
-   *  Name of the Migration class to instantiate.
-   * @param array $arguments
-   *  Further information configuring the migration.
-   */
-  protected function addMigration($machine_name, $class_name, $arguments) {
-    $arguments += array(
-        'source_version' => $this->sourceVersion,
-        'source_connection' => $this->groupName . '_legacy',
-        'source_database' => $this->database,
-      );
-    parent::addMigration($machine_name, $class_name, $arguments);
   }
 }
