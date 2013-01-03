@@ -148,6 +148,11 @@ class MigrateD2DWizard extends MigrateUIWizard {
             t('The absolute path to the file where your legacy Drupal data is stored');
           break;
       }
+      // The host is likely to not be localhost, so move out of advanced options
+      if (isset($form['settings'][$key]['advanced_options']['host'])) {
+        $form['settings'][$key]['host'] = $form['settings'][$key]['advanced_options']['host'];
+        unset($form['settings'][$key]['advanced_options']['host']);
+      }
       $form['settings'][$key]['#prefix'] = '<h2 class="js-hide">' . t('@driver_name settings', array('@driver_name' => $driver->name())) . '</h2>';
       $form['settings'][$key]['#type'] = 'container';
       $form['settings'][$key]['#tree'] = TRUE;
