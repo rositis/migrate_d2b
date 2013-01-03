@@ -391,7 +391,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
                       ->execute()
                       ->fetchField();
       }
-      $title = t('@name: @count', array('@name' => $vocab->name,
+      $title = t('Import @count from @name to:', array('@name' => $vocab->name,
         '@count' => format_plural($this->termCounts[$vocab->vid], '1 term', '@count terms')));
       $form['vocab'][$vocab->vid] = array(
         '#type' => 'select',
@@ -439,6 +439,12 @@ class MigrateD2DWizard extends MigrateUIWizard {
       '#suffix' => '</div>',
     );
 
+    $form['prefix'] = array(
+      '#prefix' => '<p><strong>',
+      '#markup' => t('Import&hellip;'),
+      '#suffix' => '</strong></p>',
+    );
+
     if (empty($this->nodeCounts)) {
       $get_node_counts = TRUE;
     }
@@ -474,10 +480,19 @@ class MigrateD2DWizard extends MigrateUIWizard {
                       ->countQuery()
                       ->execute()
                       ->fetchField();
+        // But, always default to do-not-import if there are no nodes.
+        if ($this->nodeCounts[$row->type] == 0) {
+          $default_value = '-1';
+        }
       }
-      $title = t('@name: @count', array('@name' => $row->name,
+      $title = t('&hellip;@count from @name to:', array('@name' => $row->name,
         '@count' => format_plural($this->nodeCounts[$row->type], '1 node', '@count nodes')));
       $form['type'][$row->type] = array(
+        '#type' => 'fieldset',
+        '#tree' => TRUE,
+        '#attributes' => array('class' => array('container-inline')),
+      );
+      $form['type'][$row->type]['options'] = array(
         '#type' => 'select',
         '#title' => $title,
         '#options' => $options,
@@ -495,15 +510,17 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected function contentTypeFormValidate(&$form_state) {
     // Start with ourselves
     $after = $this->currentStep;
-    foreach ($form_state['values']['type'] as $source_type => $dest_type) {
+    $this->typeMappings = array();
+    foreach ($form_state['values']['type'] as $source_type => $dest_options) {
+      $dest_type = $dest_options['options'];
       // For each content type to be migrated, add a step to the wizard.
       if ($dest_type != '0' && $dest_type != '-1') {
         $context = array('source_type' => $source_type, 'dest_type' => $dest_type);
         $after = $this->addStep(t('Field mappings for @type',
           array('@type' => $source_type)), 'fieldsForm', $after, $context);
       }
+      $this->typeMappings[$source_type] = $dest_type;
     }
-    $this->typeMappings = $form_state['values']['type'];
   }
 
   /**
