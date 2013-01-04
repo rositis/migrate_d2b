@@ -628,14 +628,14 @@ class MigrateD2DWizard extends MigrateUIWizard {
       '#suffix' => '</div>',
     );
 
-    $migrations = '';
+    $imports = $non_imports = '';
     if ($this->userMigration) {
       $admin_name = $this->connection()->select('users', 'u')
                     ->fields('u', array('name'))
                     ->condition('uid', 1)
                     ->execute()
                     ->fetchField();
-      $migrations .= t('<li>%count user accounts (omitting the administrative account ' .
+      $imports .= t('<li>%count user accounts (omitting the administrative account ' .
         '%admin) will be imported.</li>',
         array('%admin' => $admin_name, '%count' => $this->userCount));
       $arguments = array(
@@ -645,7 +645,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
       $this->addMigration('User', "DrupalUser{$this->sourceVersion}Migration", $arguments);
     }
     else {
-      $migrations .= t('<li>User accounts will not be migrated</li>');
+      $non_imports .= t('<li>User accounts will not be migrated</li>');
     }
 
     if ($this->connection()->schema()->tableExists('taxonomy_vocabulary')) {
@@ -663,12 +663,12 @@ class MigrateD2DWizard extends MigrateUIWizard {
                            ->fetchField();
       $count = format_plural($this->termCounts[$source_vid], '1 term', '@count terms');
       if ($destination_name == '-1') {
-        $migrations .= t('<li>The %vocabulary vocabulary will not be imported.</li>',
+        $non_imports .= t('<li>The %vocabulary vocabulary will not be imported.</li>',
           array('%vocabulary' => $source_vocabulary));
       }
       else {
         if ($destination_name == '0') {
-          $migrations .= t('<li>The %vocabulary vocabulary will be created with %count.</li>',
+          $imports .= t('<li>The %vocabulary vocabulary will be created with %count.</li>',
                            array('%vocabulary' => $source_vocabulary, '%count' => $count));
         }
         else {
@@ -677,7 +677,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
             ->condition('machine_name', $destination_name)
             ->execute()
             ->fetchField();
-          $migrations .= t('<li>%count from %source will be imported into the %destination vocabulary.</li>',
+          $imports .= t('<li>%count from %source will be imported into the %destination vocabulary.</li>',
                            array('%source' => $source_vocabulary, '%destination' => $destination_vocabulary,
                              '%count' => $count));
         }
@@ -710,12 +710,12 @@ class MigrateD2DWizard extends MigrateUIWizard {
                            ->fetchField();
       $count = format_plural($this->nodeCounts[$source_type], '1 node', '@count nodes');
       if ($destination_type == '-1') {
-        $migrations .= t('<li>The %type content type will not be imported.</li>',
+        $non_imports .= t('<li>The %type content type will not be imported.</li>',
           array('%type' => $source_name));
       }
       else {
         if ($destination_type == '0') {
-          $migrations .= t('<li>The %type content type will be created with %count.</li>',
+          $imports .= t('<li>The %type content type will be created with %count.</li>',
                            array('%type' => $source_name, '%count' => $count));
         }
         else {
@@ -724,7 +724,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
             ->condition('type', $destination_type)
             ->execute()
             ->fetchField();
-          $migrations .= t('<li>%count from %source will be imported into the %destination content type.</li>',
+          $imports .= t('<li>%count from %source will be imported into the %destination content type.</li>',
                            array('%count' => $count, '%source' => $source_name, '%destination' => $destination_type));
         }
         $arguments = array(
@@ -742,45 +742,17 @@ class MigrateD2DWizard extends MigrateUIWizard {
       }
     }
 
-    $form['migration_list'] = array(
-      '#prefix' => '<ol>',
-      '#markup' => $migrations,
-      '#suffix' => '</ol>',
+    $form['import_list'] = array(
+      '#prefix' => '<ul>',
+      '#markup' => $imports,
+      '#suffix' => '</ul><br />',
     );
 
-    return $form;
-    $types_created = $types_ignored = $types_mapped = '';
-    foreach ($form_state['storage']['type'] as $source_type => $destination_type) {
-      $source_name = $this->connection()->select('node_type', 't')
-                     ->fields('t', array('name'))
-                     ->condition('type', $source_type)
-                     ->execute()
-                     ->fetchField();
-      if ($destination_type == '-1') {
-        $types_ignored .= '<p><em>' . $source_name . '</em></p>';
-      }
-      elseif ($destination_type == '0') {
-        $types_created .= '<p><em>' . $source_name . '</em></p>';
-      }
-      else {
-        $destination_name = db_select('node_type', 't')
-                            ->fields('t', array('name'))
-                            ->condition('type', $destination_type)
-                            ->execute()
-                            ->fetchField();
-        $types_mapped .= t('<p>Nodes of source type %source will be imported as nodes of destination type %destination.</p>',
-          array('%source' => $source_name, '%destination' => $destination_name));
-      }
-    }
-    if (count($types_ignored) > 0) {
-      $message .= t('<p>The following node types will not be imported:</p>');
-      $message .= $types_ignored;
-    }
-    if (count($types_created) > 0) {
-      $message .= t('<p>The following node types will be created:</p>');
-      $message .= $types_created;
-    }
-    $message .= $types_mapped;
+    $form['non_import_list'] = array(
+      '#prefix' => '<ul>',
+      '#markup' => $non_imports,
+      '#suffix' => '</ul>',
+    );
 
     return $form;
   }
