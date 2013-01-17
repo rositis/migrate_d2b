@@ -226,7 +226,6 @@ class DrupalVersion6 extends DrupalVersion {
                 foreach ($info['columns'] as $display_name => $column_name) {
                   if ($i++ == 0) {
                     $query->addField('f', $column_name, $field_name);
-                    drush_print("adding $column_name as $field_name");
                   }
                   else {
                     // The database API won't allow colons in column aliases, so we
@@ -235,7 +234,6 @@ class DrupalVersion6 extends DrupalVersion {
                     $clean_name = str_replace(':', '_', $display_name);
                     $fix_field_names[$clean_name] = $display_name;
                     $query->addField('f', $column_name);
-                    drush_print("adding $column_name");
                   }
                   $field_found = TRUE;
                 }
