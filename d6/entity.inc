@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * Implementation of DrupalNodeMigration for Drupal 6 sources.
+ * Implementation of DrupalEntityMigration for Drupal 6 sources.
  */
 
 /**
- * Handling specific to a Drupal 6 source for nodes.
+ * Handling specific to a Drupal 6 node source for entities.
  */
-class DrupalNode6Migration extends DrupalNodeMigration {
+class DrupalEntity6Migration extends DrupalEntityMigration {
   /**
    * Translation from field names assigned when executing the query to our
    * subfield notation.
@@ -31,21 +31,13 @@ class DrupalNode6Migration extends DrupalNodeMigration {
     $this->source = new MigrateDrupal6SourceSQL($query, $this->sourceFields, NULL,
       $this->sourceOptions);
 
-    $this->addFieldMapping('language', 'language')
-         ->defaultValue($this->defaultLanguage);
-
-    $this->addFieldMapping('body:summary', 'teaser');
-    $this->addFieldMapping('body:format', 'format')
-         ->callbacks(array($this, 'mapFormat'));
-    $this->addFieldMapping(NULL, 'moderate');
-    /** @todo Prevent stub creation when tnid == 0
-    $this->addFieldMapping('tnid', 'tnid', FALSE)
-         ->sourceMigration($arguments['machine_name']);
-     */
-    $this->addFieldMapping('tnid', NULL);
-    $this->addFieldMapping(NULL, 'tnid');
-
-    $this->addFieldMapping('translate', 'translate');
+    $this->addUnmigratedSources(array(
+      'format',
+      'language',
+      'teaser',
+      'tnid',
+      'translate',
+    ));
   }
 
   /**
@@ -105,43 +97,5 @@ class DrupalNode6Migration extends DrupalNodeMigration {
         unset($row->$clean);
       }
     }
-    // Don't populate summary if the teaser matches the generated summary.
-    if (empty($row->teaser) || $row->teaser != text_summary($row->body)) {
-      $row->teaser = '';
-    }
-  }
-}
-
-/**
- * We override the default SQL source class just so we can clean up subfield
- * names for the UI.
- */
-class MigrateDrupal6SourceSQL extends MigrateSourceSQL {
-  /**
-   * Translation from field names assigned when executing the query to our
-   * subfield notation.
-   *
-   * @var array
-   *  key: DB-compatible name (e.g., field_buy_link_title).
-   *  value: Subfield notation (e.g., field_buy_link:title).
-   */
-  public $fixFieldNames = array();
-
-  public function __construct(SelectQueryInterface $query, array $fields = array(),
-        SelectQueryInterface $count_query = NULL, array $options = array()) {
-    $this->fixFieldNames = $options['fix_field_names'];
-    parent::__construct($query, $fields, $count_query, $options);
-  }
-
-  public function fields() {
-    $fields = parent::fields();
-
-    // Remove the default subfield names in favor of the nice-looking ones.
-    foreach ($this->fixFieldNames as $clean => $display) {
-      if (isset($fields[$clean])) {
-        unset($fields[$clean]);
-      }
-    }
-    return $fields;
   }
 }
