@@ -617,7 +617,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
       'source_system' => t('Drupal @version', array('@version' => $this->sourceVersion)),
     );
 
-    $message = t('<p>Please review your import configuration. When you submit this
+    $message = t('<p>Please review your import settings. When you submit this
       form, an import job containing an import task for each type of item to be
       imported will be created and you will be left at the
       import dashboard.</p>');
