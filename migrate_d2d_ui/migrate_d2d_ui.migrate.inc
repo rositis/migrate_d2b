@@ -59,6 +59,13 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected $nodeCounts = array();
 
   /**
+   * Mappings of user fields by machine name.
+   *
+   * @var array
+   */
+  protected $userFieldMappings = array();
+
+  /**
    * For each content type, mappings of its fields by machine name.
    *
    * @var array
@@ -255,6 +262,27 @@ class MigrateD2DWizard extends MigrateUIWizard {
       '#markup' => t('TODO: Option to import roles, and map source roles to D7 roles'),
       '#postfix' => '</div>',
     );
+
+    // @todo: AJAX to show/hide the following based on the do_migration checkbox
+    $source_class = "DrupalUser{$this->sourceVersion}Migration";
+    $temp_machine_name = md5('tempuser');
+    $arguments = array(
+      'source_connection' => $this->groupName . '_legacy',
+      'source_database' => $this->database,
+      'source_version' => $this->sourceVersion,
+      'class_name' => $source_class,
+      'description' => t('Temp user migration to fetch fields'),
+      'machine_name' => $temp_machine_name,
+    );
+    Migration::registerMigration($source_class, $temp_machine_name, $arguments);
+
+    require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'migrate_ui') .
+      '/migrate_ui.pages.inc';
+
+    $form += migrate_ui_mapping_edit_form($temp_machine_name);
+
+    Migration::deregisterMigration($temp_machine_name);
+
     return $form;
 
     $result = $this->connection()->select('role', 'r')
@@ -305,10 +333,12 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected function userFormValidate(&$form_state) {
     if ($form_state['values']['do_migration']) {
       $this->userMigration = TRUE;
+      $this->userFieldMappings = $form_state['values']['field_mappings'];
     }
     else {
       $this->userMigration = FALSE;
     }
+
   }
 
   /**
@@ -326,7 +356,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
     else {
       $vocab_table = '';
       $term_table = '';
-      $vocab_count = 0;
     }
 
     if ($vocab_table) {
@@ -335,6 +364,9 @@ class MigrateD2DWizard extends MigrateUIWizard {
                      ->countQuery()
                      ->execute()
                      ->fetchField();
+    }
+    else {
+      $vocab_count = 0;
     }
     if (!$vocab_count) {
       $form['description'] = array(
@@ -347,10 +379,14 @@ class MigrateD2DWizard extends MigrateUIWizard {
     $form['#tree'] = TRUE;
     $form['description'] = array(
       '#prefix' => '<div>',
+/*
       '#markup' => t('For each vocabulary on the source site, choose the destination
         site vocabulary to import its terms. You may also choose not to import a given
         vocabulary, or automatically create a new vocabulary of the same name if
-        one does not already exist.'),
+        one does not already exist.'),*/
+      '#markup' => t('For each vocabulary on the source site, choose the destination
+        site vocabulary to import its terms. You may also choose not to import a given
+        vocabulary.'),
       '#suffix' => '</div>',
     );
 
@@ -362,7 +398,8 @@ class MigrateD2DWizard extends MigrateUIWizard {
     }
     $base_options = array(
       -1 => t('--Do not import--'),
-      0 => t('--Create vocabulary--'),
+      // @todo: Not yet supported
+//      0 => t('--Create vocabulary--'),
     );
     $vocab_options = array();
     $local_vocabs = taxonomy_get_vocabularies();
@@ -432,10 +469,14 @@ class MigrateD2DWizard extends MigrateUIWizard {
     $form['#tree'] = TRUE;
     $form['description'] = array(
       '#prefix' => '<div>',
+/*
       '#markup' => t('For each content type on the source site, choose the destination
         site content type to import its content. You may also choose not to import a given
         content type, or automatically create a new content type of the same name if
-        one does not already exist.'),
+        one does not already exist.'),*/
+      '#markup' => t('For each content type on the source site, choose the destination
+        site content type to import its content. You may also choose not to import a given
+        content type.'),
       '#suffix' => '</div>',
     );
 
@@ -453,7 +494,8 @@ class MigrateD2DWizard extends MigrateUIWizard {
     }
     $base_options = array(
       '-1' => t('--Do not import--'),
-      '0' => t('--Create content type--'),
+      // @todo: Not yet supported
+//      '0' => t('--Create content type--'),
     );
     $node_options = array();
     $local_types = node_type_get_types();
@@ -545,51 +587,22 @@ class MigrateD2DWizard extends MigrateUIWizard {
       'destination_type' => $dest_type,
     );
     Migration::registerMigration($source_class, $temp_machine_name, $arguments);
-    $migration = Migration::getInstance($temp_machine_name);
-    $source_fields = $migration->getSource()->fields();
-    $dest_fields = $migration->getDestination()->fields();
-    Migration::deregisterMigration($temp_machine_name);
 
-    $form['#tree'] = TRUE;
     $form['description'] = array(
       '#prefix' => '<div>',
-      '#markup' => t('For each field in the source type %source, choose the destination
-        site field from the destination type %destination to import its content.
-        You may also choose not to import a given field, or automatically create
-        the field with the same name if it does not already exist.',
+      '#markup' => t('For each field in the destination type %destination, choose the source
+        site field from the source type %source to import its content.
+        You may also choose not to import a given field.',
         array('%source' => $source_type, '%destination' => $dest_type)),
       '#suffix' => '</div>',
     );
 
-    $base_options = array(
-      '-1' => t('--Do not import--'),
-      '0' => t('--Create field--'),
-    );
-    $field_options = array();
-    foreach ($dest_fields as $name => $description) {
-      $field_options[$name] = strip_tags($description);
-    }
-    foreach ($source_fields as $name => $description) {
-      if (is_array($description)) {
-        $description = reset($description);
-      }
-      $options = $base_options + $field_options;
-      // If we have a match on field name, default the mapping to that match
-      // and remove the option to create a new field of that name.
-      if (isset($field_options[$name])) {
-        $default_value = $name;
-        unset($options['0']);
-      }
-      else {
-        $default_value = '-1';
-      }
-      $form['field'][$name] = array(
-        '#type' => 'select',
-        '#title' => $description,
-        '#options' => $options,
-        '#default_value' => $default_value,
-      );
-    }
+    require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'migrate_ui') .
+      '/migrate_ui.pages.inc';
+
+    $form += migrate_ui_mapping_edit_form($temp_machine_name);
+
+    Migration::deregisterMigration($temp_machine_name);
 
     return $form;
   }
@@ -602,7 +615,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected function fieldsFormValidate(&$form_state) {
     $type_mapping = $this->currentStep->getContext();
     $source_type = $type_mapping['source_type'];
-    $this->fieldMappings[$source_type] = $form_state['values']['field'];
+    $this->fieldMappings[$source_type] = $form_state['values']['field_mappings'];
   }
 
   /**
@@ -642,6 +655,13 @@ class MigrateD2DWizard extends MigrateUIWizard {
         'description' => t('Migration of users from Drupal @version',
                  array('@version' => $this->sourceVersion)),
       );
+      foreach ($this->userFieldMappings as $destination_field => $source_field) {
+        if ($source_field == -1) {
+          $source_field = NULL;
+        }
+        $mapping = new MigrateFieldMapping($destination_field, $source_field);
+        $arguments['field_mappings'][] = $mapping;
+      }
       $this->addMigration('User', "DrupalUser{$this->sourceVersion}Migration", $arguments);
     }
     else {
@@ -719,13 +739,13 @@ class MigrateD2DWizard extends MigrateUIWizard {
                            array('%type' => $source_name, '%count' => $count));
         }
         else {
-          $destination_type = db_select('node_type', 'nt')
+          $destination_type_name = db_select('node_type', 'nt')
             ->fields('nt', array('name'))
             ->condition('type', $destination_type)
             ->execute()
             ->fetchField();
           $imports .= t('<li>%count from %source will be imported into the %destination content type.</li>',
-                           array('%count' => $count, '%source' => $source_name, '%destination' => $destination_type));
+                           array('%count' => $count, '%source' => $source_name, '%destination' => $destination_type_name));
         }
         $arguments = array(
           'source_type' => $source_type,
@@ -736,6 +756,13 @@ class MigrateD2DWizard extends MigrateUIWizard {
         );
         if ($this->userMigration) {
           $arguments['user_migration'] = $this->groupName . 'User';
+        }
+        foreach ($this->fieldMappings[$source_type] as $destination_field => $source_field) {
+          if ($source_field == -1) {
+            $source_field = NULL;
+          }
+          $mapping = new MigrateFieldMapping($destination_field, $source_field);
+          $arguments['field_mappings'][] = $mapping;
         }
         $this->addMigration('Node' . $arguments['source_type'],
                             "DrupalNode{$this->sourceVersion}Migration", $arguments);

@@ -41,6 +41,7 @@ abstract class DrupalNodeMigration extends DrupalMigration {
    */
   public function __construct(array $arguments) {
     $this->destinationType = $arguments['destination_type'];
+    $this->sourceType = $arguments['source_type'];
     if (!empty($arguments['user_migration'])) {
       $user_migration = $arguments['user_migration'];
       $this->dependencies[] = $user_migration;
