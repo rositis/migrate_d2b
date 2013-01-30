@@ -66,11 +66,32 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected $userFieldMappings = array();
 
   /**
+   * Default values associated with user field mappings.
+   *
+   * @var array
+   */
+  protected $userDefaultValues = array();
+
+  /**
    * For each content type, mappings of its fields by machine name.
    *
    * @var array
    */
   protected $fieldMappings = array();
+
+  /**
+   * For each content type, whether to migrate its comments.
+   *
+   * @var array
+   */
+  protected $comments = array();
+
+  /**
+   * Default values associated with node field mappings.
+   *
+   * @var array
+   */
+  protected $defaultValues = array();
 
   /**
    * Lay out the basic steps of the wizard.
@@ -257,12 +278,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
       '#default_value' => TRUE,
     );
 
-    $form['todo'] = array(
-      '#prefix' => '<div>',
-      '#markup' => t('TODO: Option to import roles, and map source roles to D7 roles'),
-      '#postfix' => '</div>',
-    );
-
     // @todo: AJAX to show/hide the following based on the do_migration checkbox
     $source_class = "DrupalUser{$this->sourceVersion}Migration";
     $temp_machine_name = md5('tempuser');
@@ -275,9 +290,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
       'machine_name' => $temp_machine_name,
     );
     Migration::registerMigration($source_class, $temp_machine_name, $arguments);
-
-    require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'migrate_ui') .
-      '/migrate_ui.pages.inc';
 
     $form += migrate_ui_mapping_edit_form($temp_machine_name);
 
@@ -334,11 +346,11 @@ class MigrateD2DWizard extends MigrateUIWizard {
     if ($form_state['values']['do_migration']) {
       $this->userMigration = TRUE;
       $this->userFieldMappings = $form_state['values']['field_mappings'];
+      $this->userDefaultValues = $form_state['values']['default_values'];
     }
     else {
       $this->userMigration = FALSE;
     }
-
   }
 
   /**
@@ -573,6 +585,43 @@ class MigrateD2DWizard extends MigrateUIWizard {
     $source_type = $type_mapping['source_type'];
     $dest_type = $type_mapping['dest_type'];
 
+    if ($this->connection()->schema()->tableExists('comments')) {
+      $comment_table = 'comments';
+    }
+    elseif ($this->connection()->schema()->tableExists('comment')) {
+      $comment_table = 'comment';
+    }
+    else {
+      $comment_table = '';
+    }
+    $num_comments = 0;
+    if ($comment_table) {
+      $query = $this->connection()->select('node', 'n')
+               ->condition('n.type', $source_type);
+      $query->innerJoin($comment_table, 'c', 'n.nid=c.nid');
+      $num_comments = $query->countQuery()->execute()->fetchField();
+    }
+
+    if ($num_comments) {
+      $form['num_comments'] = array(
+        '#prefix' => '<div>',
+        '#markup' => t('Number of comments available to be migrated from your Drupal !version site: !count',
+                       array('!version' => $this->sourceVersion, '!count' => $num_comments)),
+        '#postfix' => '</div>',
+      );
+      $form['migrate_comments'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Import comments on this content type'),
+        '#default_value' => TRUE,
+      );
+    }
+    else {
+      $form['migrate_comments'] = array(
+        '#type' => 'value',
+        '#value' => FALSE,
+      );
+    }
+
     // Temporarily register a migration, as a lazy way to get the available fields.
     $source_class = "DrupalNode{$this->sourceVersion}Migration";
     $temp_machine_name = md5('temp');
@@ -597,9 +646,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
       '#suffix' => '</div>',
     );
 
-    require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'migrate_ui') .
-      '/migrate_ui.pages.inc';
-
     $form += migrate_ui_mapping_edit_form($temp_machine_name);
 
     Migration::deregisterMigration($temp_machine_name);
@@ -616,6 +662,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
     $type_mapping = $this->currentStep->getContext();
     $source_type = $type_mapping['source_type'];
     $this->fieldMappings[$source_type] = $form_state['values']['field_mappings'];
+    $this->comments[$source_type] = $form_state['values']['migrate_comments'];
   }
 
   /**
@@ -660,6 +707,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
           $source_field = NULL;
         }
         $mapping = new MigrateFieldMapping($destination_field, $source_field);
+        $mapping->defaultValue($this->userDefaultValues[$destination_field]);
         $arguments['field_mappings'][] = $mapping;
       }
       $this->addMigration('User', "DrupalUser{$this->sourceVersion}Migration", $arguments);
@@ -766,6 +814,15 @@ class MigrateD2DWizard extends MigrateUIWizard {
         }
         $this->addMigration('Node' . $arguments['source_type'],
                             "DrupalNode{$this->sourceVersion}Migration", $arguments);
+        if ($this->comments[$source_type]) {
+          unset($arguments['field_mappings']);
+          $arguments['description'] = t('Migration of @source_type comments from Drupal @version',
+                             array('@vocabulary' => $source_name,
+                                   '@version' => $this->sourceVersion));
+          $arguments['node_migration'] = $this->groupName . 'Node' . $arguments['source_type'];
+          $this->addMigration('Comment' . $arguments['source_type'],
+                              "DrupalComment{$this->sourceVersion}Migration", $arguments);
+        }
       }
     }
 
