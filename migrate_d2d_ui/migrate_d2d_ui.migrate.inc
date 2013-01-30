@@ -130,7 +130,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
 
     $form['overview'] = array(
       '#prefix' => '<p>',
-      '#markup' => t('External Drupal sites (versions 6 or 7) can be imported ' .
+      '#markup' => t('External Drupal sites (versions 5, 6, or 7) can be imported ' .
        'into Drupal using this form. Please provide database credentials for the ' .
        'external Drupal site. It is recommended that this not be the same database ' .
        'user as is used by the site, but a user with read-only privileges.'),
@@ -214,12 +214,15 @@ class MigrateD2DWizard extends MigrateUIWizard {
                    ->fetchField();
       if ($admin_uid) {
         // Format module is required by D6 and D7, table name changed.
-        // @todo: Support D5
         if ($this->connection()->schema()->tableExists('filter_format')) {
           $this->sourceVersion = '7';
         }
-        else {
+        // Semaphore table introduced in D6.
+        elseif ($this->connection()->schema()->tableExists('semaphore')) {
           $this->sourceVersion = '6';
+        }
+        else {
+          $this->sourceVersion = '5';
         }
 
         // Use the site_name as the group name
