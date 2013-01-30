@@ -50,9 +50,30 @@ abstract class DrupalNodeMigration extends DrupalMigration {
       $this->defaultLanguage = $arguments['default_language'];
     }
     parent::__construct($arguments);
+
+    // Document known core fields
+    $this->sourceFields += array(
+      'nid' => t('Node ID'),
+      'title' => t('Title'),  // @todo Depends on has_title, and label may be customized
+      'body' => t('Body'),
+      'format' => t('Format'),
+      'teaser' => t('Teaser'),
+      'uid' => t('Authored by (uid)'),
+      'created' => t('Created timestamp'),
+      'changed' => t('Modified timestamp'),
+      'status' => t('Published'),
+      'promote' => t('Promoted to front page'),
+      'sticky' => t('Sticky at top of lists'),
+      'revision' => t('Create new revision'),
+      'log' => t('Revision Log message'),
+      'language' => t('Language (fr, en, ...)'),
+      'tnid' => t('The translation set id for this node'),
+      'revision_uid' => t('Revision modified by author (uid)'),
+    );
+
     $this->sourceFields += $this->version->getSourceFields('node', $this->sourceType);
     if ($this->moduleExists('path')) {
-      $this->sourceFields['path'] = array('label' => t('Node: Path alias'));
+      $this->sourceFields['path'] = array('label' => t('Path alias'));
     }
 
     $this->destination = new MigrateDestinationNode($this->destinationType);

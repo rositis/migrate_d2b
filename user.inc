@@ -43,15 +43,35 @@ abstract class DrupalUserMigration extends DrupalMigration {
       $this->dependencies[] = $this->roleMigration;
     }
 
-    // Get any CCK/core fields attached to users.
+    // Document known core fields
+    $this->sourceFields += array(
+      'uid' => t('User ID'),
+      'mail' => t('Email address'),
+      'name' => t('Username'),
+      'pass' => t('Password'),
+      'status' => t('Status'),
+      'created' => t('Registered timestamp'),
+      'access' => t('Last access timestamp'),
+      'login' => t('Last login timestamp'),
+      'picture' => t('Picture'),
+      'signature' => t('Signature'),
+      'signature_format' => t('Signature format'),
+      'timezone' => t('Timezone'),
+      'language' => t('Language'),
+      'theme' => t('Default theme'),
+      'init' => t('Init'),
+      'data' => t('Data'),
+    );
+
+    // Get any CCK fields attached to users.
     $this->sourceFields += $this->version->getSourceFields(
       'user', 'user');
 
     if ($this->moduleExists('path')) {
-      $this->sourceFields['path'] = array('label' => t('User: Path alias'));
+      $this->sourceFields['path'] = array('label' => t('Path alias'));
     }
     if ($this->roleMigration) {
-      $this->sourceFields['roles'] = array('label' => t('User: Roles'));
+      $this->sourceFields['roles'] = array('label' => t('Roles'));
     }
 
     $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields,
@@ -222,7 +242,7 @@ abstract class DrupalUserMigration extends DrupalMigration {
 class DrupalDestinationUser extends MigrateDestinationUser {
   public function fields($migration = NULL) {
     $fields = parent::fields($migration);
-    $fields['path'] = t('Node: Path alias');
+    $fields['path'] = t('Path alias');
     return $fields;
   }
 }

@@ -43,7 +43,7 @@ abstract class DrupalTermMigration extends DrupalMigration {
     $this->sourceFields += $this->version->getSourceFields(
       'taxonomy_term', $this->sourceVocabulary);
     if ($this->moduleExists('path')) {
-      $this->sourceFields['path'] = array('label' => t('Node: Path alias'));
+      $this->sourceFields['path'] = array('label' => t('Path alias'));
     }
 
     // Create our three main objects - source, destination, and map
