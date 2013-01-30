@@ -296,6 +296,32 @@ class DrupalVersion6 extends DrupalVersion {
       // Populates sourceFieldInfo directly
       $this->populateSourceFieldInfo('node', $type_name);
     }
+
+    // If the profile node type is defined by a feature, the content_profile
+    // variable may not be in the variables table, but we might find it
+    // strongarmed in cache.
+    $strongarm = Database::getConnection('default', $this->arguments['source_connection'])
+             ->select('cache', 'c')
+             ->fields('c', array('data'))
+             ->condition('cid', 'strongarm')
+             ->execute()
+             ->fetchField();
+    if ($strongarm) {
+      $strongarm = unserialize($strongarm);
+      $prefix = 'content_profile_use_';
+      $prefix_len = strlen($prefix);
+      foreach ($strongarm as $key => $value) {
+        if (substr($key, 0, $prefix_len) == $prefix && $value == 1) {
+          $type_name = substr($key, $prefix_len);
+          if (!in_array($type_name, $this->profileTypes)) {
+            $this->profileTypes[] = $type_name;
+            // Populates sourceFieldInfo directly
+            $this->populateSourceFieldInfo('node', $type_name);
+          }
+        }
+      }
+    }
+
     // Then, check the core profile
     if (Database::getConnection('default', $this->arguments['source_connection'])
           ->schema()->tableExists('profile_fields')) {
