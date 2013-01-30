@@ -49,6 +49,13 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected $termCounts = array();
 
   /**
+   * Source site directory from which to fetch files.
+   *
+   * @var string
+   */
+  protected $sourceDirectory = '';
+
+  /**
    * Mappings of source content types to destination content types (by machine
    * name).
    *
@@ -101,6 +108,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
     $this->addStep(t('Credentials'), 'sourceDataForm');
     $this->addStep(t('Users'), 'userForm');
     $this->addStep(t('Taxonomy'), 'taxonomyForm');
+    $this->addStep(t('Files'), 'fileForm');
     $this->addStep(t('Content Types'), 'contentTypeForm');
     $this->addStep(t('Review'), 'reviewForm');
   }
@@ -217,8 +225,8 @@ class MigrateD2DWizard extends MigrateUIWizard {
         if ($this->connection()->schema()->tableExists('filter_format')) {
           $this->sourceVersion = '7';
         }
-        // Semaphore table introduced in D6.
-        elseif ($this->connection()->schema()->tableExists('semaphore')) {
+        // Menus refactored in D6.
+        elseif ($this->connection()->schema()->tableExists('menu_router')) {
           $this->sourceVersion = '6';
         }
         else {
@@ -465,6 +473,77 @@ class MigrateD2DWizard extends MigrateUIWizard {
   }
 
   /**
+   * Configure file migration.
+   */
+  protected function fileForm(&$form_state) {
+    if ($this->connection()->schema()->tableExists('file_managed')) {
+      $file_table = 'file_managed';
+    }
+    else {
+      $file_table = 'files';
+    }
+
+    $file_count = $this->connection()->select($file_table, 'f')
+                     ->fields('f', array('fid'))
+                     ->countQuery()
+                     ->execute()
+                     ->fetchField();
+
+    if ($file_count) {
+      $form['instructions'] = array(
+        '#prefix' => '<div>',
+        '#markup' => t('To be able to retrieve any uploaded files from your ' .
+          'legacy site, we need to know where to find them. If your legacy site '.
+          'is on the same web server as the destination site, or you have copied '.
+          'your file directory to the web server, please provide the full ' .
+          'file directory - for example, <em>/var/www/drupal/sites/example.com/files/</em>. ' .
+          'Otherwise, we need the web address of that directory. Please visit a ' .
+          'node on the site containing images, or a user profile with an uploaded ' .
+          'picture. Right-click on the picture and look for an operation such as ' .
+          '<em>View Image</em>. Choose that function and look at the URL of the ' .
+          'image - it will usually look something like ' .
+          '<em>http://example.com/sites/default/files/pictures/picture-3.jpg</em> ' .
+          '(for user pictures) or ' .
+          '<em>http://example.com/sites/default/files/my-photo.jpg</em> ' .
+          '(for files uploaded to nodes). Please enter the full address of the ' .
+          'files directory (<em>http://example.com/sites/default/files/</em>) ' .
+          'below. Leave the field empty to skip migrating files.'),
+        '#suffix' => '</div>',
+      );
+
+      $form['description'] = array(
+        '#prefix' => '<div>',
+        '#markup' => t('There are !count files (including user pictures) ' .
+                'available to be migrated.', array('!count' => $file_count)),
+        '#suffix' => '</div>',
+      );
+
+      $form['source_directory'] = array(
+        '#type' => 'textfield',
+        '#size' => 60,
+        '#title' => t('File prefix'),
+      );
+    }
+    else {
+      $form['description'] = array(
+        '#prefix' => '<div>',
+        '#markup' => t('There are no files to be migrated from your source site.'),
+        '#suffix' => '</div>',
+      );
+    }
+
+    return $form;
+  }
+
+  /**
+   * Save the selected vocabulary mappings, as an array keyed by source vid and
+   * containing the destination machine_name (bundle).
+   */
+  protected function fileFormValidate(&$form_state) {
+    $this->sourceDirectory = $form_state['values']['source_directory'];
+  }
+
+  /**
    * Form for mapping source content (node) types to destination types.
    */
   protected function contentTypeForm(&$form_state) {
@@ -706,6 +785,16 @@ class MigrateD2DWizard extends MigrateUIWizard {
                  array('@version' => $this->sourceVersion)),
       );
       foreach ($this->userFieldMappings as $destination_field => $source_field) {
+        if ($destination_field == 'picture' && $source_field == 'picture') {
+          $picture_arguments = array(
+            'source_dir' => $this->sourceDirectory,
+            'description' => t('Migration of user pictures from Drupal @version',
+                     array('@version' => $this->sourceVersion)),
+          );
+          $this->addMigration('Picture', "DrupalPicture{$this->sourceVersion}Migration",
+                              $picture_arguments);
+          $arguments['picture_migration'] = $this->groupName . 'Picture';
+        }
         if ($source_field == -1) {
           $source_field = NULL;
         }
@@ -773,6 +862,17 @@ class MigrateD2DWizard extends MigrateUIWizard {
       }
     }
 
+    if ($this->sourceDirectory) {
+      $arguments = array(
+        'user_migration' => $this->groupName . 'User',
+        'source_dir' => $this->sourceDirectory,
+        'description' => t('Migration of files from Drupal @version',
+                 array('@version' => $this->sourceVersion)),
+      );
+      $this->addMigration('File', "DrupalFile{$this->sourceVersion}Migration",
+                          $arguments);
+    }
+
     foreach ($this->typeMappings as $source_type => $destination_type) {
       $source_name = $this->connection()->select('node_type', 'nt')
                            ->fields('nt', array('name'))
@@ -807,6 +907,11 @@ class MigrateD2DWizard extends MigrateUIWizard {
         );
         if ($this->userMigration) {
           $arguments['user_migration'] = $this->groupName . 'User';
+        }
+        // Hard to tell what node migrations might need files, so make sure they
+        // all fall after it.
+        if ($this->sourceDirectory) {
+          $arguments['soft_dependencies'] = array('File');
         }
         foreach ($this->fieldMappings[$source_type] as $destination_field => $source_field) {
           if ($source_field == -1) {
