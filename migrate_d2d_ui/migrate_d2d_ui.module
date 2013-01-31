@@ -1,1 +1,16 @@
 <?php
+
+/**
+* Implements hook_theme()
+*
+* @return array
+*/
+function migrate_d2d_ui_theme() {
+  return array(
+    'migrate_d2d_ui_content_type_form' => array(
+      'arguments' => array('form' => NULL),
+      'render element' => 'form',
+      'file' => '/migrate_d2d_ui.migrate.inc',
+    )
+  );
+}

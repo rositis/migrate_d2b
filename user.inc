@@ -217,6 +217,19 @@ abstract class DrupalUserMigration extends DrupalMigration {
   }
 
   /**
+   * Implements Migration::prepare().
+   *
+   * @param $account
+   * @param $row
+   */
+  public function prepare($account, $row) {
+    // Unserialize data if necessary.
+    if (!is_array($account->data) && !strncmp($account->data, 'a:', 2)) {
+      $account->data = unserialize($account->data);
+    }
+  }
+
+  /**
    * Actions to take after a user account has been saved.
    *
    * @param $account

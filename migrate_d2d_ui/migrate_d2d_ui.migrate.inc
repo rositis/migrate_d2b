@@ -291,7 +291,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
 
     // @todo: AJAX to show/hide the following based on the do_migration checkbox
     $source_class = "DrupalUser{$this->sourceVersion}Migration";
-    $temp_machine_name = md5('tempuser');
+    $temp_machine_name = md5(rand());
     $arguments = array(
       'source_connection' => $this->groupName . '_legacy',
       'source_database' => $this->database,
@@ -563,21 +563,10 @@ class MigrateD2DWizard extends MigrateUIWizard {
     $form['#tree'] = TRUE;
     $form['description'] = array(
       '#prefix' => '<div>',
-/*
-      '#markup' => t('For each content type on the source site, choose the destination
-        site content type to import its content. You may also choose not to import a given
-        content type, or automatically create a new content type of the same name if
-        one does not already exist.'),*/
       '#markup' => t('For each content type on the source site, choose the destination
         site content type to import its content. You may also choose not to import a given
         content type.'),
       '#suffix' => '</div>',
-    );
-
-    $form['prefix'] = array(
-      '#prefix' => '<p><strong>',
-      '#markup' => t('Import&hellip;'),
-      '#suffix' => '</strong></p>',
     );
 
     if (empty($this->nodeCounts)) {
@@ -596,8 +585,11 @@ class MigrateD2DWizard extends MigrateUIWizard {
     foreach ($local_types as $type => $info) {
       $node_options[$type] = $info->name;
     }
+    asort($node_options);
+
     $result = $this->connection()->select('node_type', 't')
               ->fields('t', array('type', 'name'))
+              ->orderBy('name')
               ->execute();
     foreach ($result as $row) {
       $options = $base_options + $node_options;
@@ -621,20 +613,20 @@ class MigrateD2DWizard extends MigrateUIWizard {
           $default_value = '-1';
         }
       }
-      $title = t('&hellip;@count from @name to:', array('@name' => $row->name,
-        '@count' => format_plural($this->nodeCounts[$row->type], '1 node', '@count nodes')));
-      $form['type'][$row->type] = array(
-        '#type' => 'fieldset',
-        '#tree' => TRUE,
-        '#attributes' => array('class' => array('container-inline')),
-      );
-      $form['type'][$row->type]['options'] = array(
-        '#type' => 'select',
-        '#title' => $title,
-        '#options' => $options,
-        '#default_value' => $default_value,
-      );
+      if ($this->nodeCounts[$row->type] > 0) {
+        $title = t('@name (@count)', array('@name' => $row->name,
+          '@count' => format_plural($this->nodeCounts[$row->type], '1 node', '@count nodes')));
+        $form['type'][$row->type] = array(
+          '#type' => 'select',
+          '#title' => $row->name,
+          '#options' => $options,
+          '#default_value' => $default_value,
+        );
+      }
     }
+
+    // Set our theme function for this form
+    $form['#theme'] = 'migrate_d2d_ui_content_type_form';
 
     return $form;
   }
@@ -647,8 +639,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
     // Start with ourselves
     $after = $this->currentStep;
     $this->typeMappings = array();
-    foreach ($form_state['values']['type'] as $source_type => $dest_options) {
-      $dest_type = $dest_options['options'];
+    foreach ($form_state['values']['type'] as $source_type => $dest_type) {
       // For each content type to be migrated, add a step to the wizard.
       if ($dest_type != '0' && $dest_type != '-1') {
         $context = array('source_type' => $source_type, 'dest_type' => $dest_type);
@@ -706,7 +697,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
 
     // Temporarily register a migration, as a lazy way to get the available fields.
     $source_class = "DrupalNode{$this->sourceVersion}Migration";
-    $temp_machine_name = md5('temp');
+    $temp_machine_name = md5(rand());
     $arguments = array(
       'source_connection' => $this->groupName . '_legacy',
       'source_database' => $this->database,
@@ -785,7 +776,13 @@ class MigrateD2DWizard extends MigrateUIWizard {
                  array('@version' => $this->sourceVersion)),
       );
       foreach ($this->userFieldMappings as $destination_field => $source_field) {
-        if ($destination_field == 'picture' && $source_field == 'picture') {
+        if ($source_field == -1) {
+          $source_field = NULL;
+        }
+        $mapping = new MigrateFieldMapping($destination_field, $source_field);
+        $mapping->defaultValue($this->userDefaultValues[$destination_field]);
+        if ($destination_field == 'picture' && $source_field == 'picture' &&
+            $this->sourceDirectory) {
           $picture_arguments = array(
             'source_dir' => $this->sourceDirectory,
             'description' => t('Migration of user pictures from Drupal @version',
@@ -794,12 +791,8 @@ class MigrateD2DWizard extends MigrateUIWizard {
           $this->addMigration('Picture', "DrupalPicture{$this->sourceVersion}Migration",
                               $picture_arguments);
           $arguments['picture_migration'] = $this->groupName . 'Picture';
+          $mapping->sourceMigration($this->groupName . 'Picture');
         }
-        if ($source_field == -1) {
-          $source_field = NULL;
-        }
-        $mapping = new MigrateFieldMapping($destination_field, $source_field);
-        $mapping->defaultValue($this->userDefaultValues[$destination_field]);
         $arguments['field_mappings'][] = $mapping;
       }
       $this->addMigration('User', "DrupalUser{$this->sourceVersion}Migration", $arguments);
@@ -967,4 +960,45 @@ class MigrateD2DWizard extends MigrateUIWizard {
     }
     return $connection;
   }
+}
+
+/**
+ * Theme function to layout field mappings in a table.
+ *
+ * @param array $variables
+ *
+ * @return string
+ *  Rendered markup.
+ */
+function theme_migrate_d2d_ui_content_type_form($variables) {
+  $output = '';
+  $form = $variables['form'];
+  $elements = element_children($form);
+  if (!empty($elements)) {
+    // Iterate over the elements - render directly except for type,
+    // which we'll pack into a table.
+    foreach ($elements as $key) {
+      if ($key == 'type') {
+        $header = array(t('Source type'), t('Destination type'));
+        $rows = array();
+        $mapping_elements = element_children($form[$key]);
+        foreach ($mapping_elements as $mapping_key) {
+          if ($form['type'][$mapping_key]['#type'] == 'select') {
+            $row = array();
+            $title = $form['type'][$mapping_key]['#title'];
+            unset($form['type'][$mapping_key]['#title']);
+            $row[] = $title;
+            $row[] = drupal_render($form['type'][$mapping_key]);
+            $rows[] = $row;
+          }
+        }
+        $output .= theme('table', array('header' => $header, 'rows' => $rows));
+      }
+      else {
+        $output .= drupal_render($form[$key]);
+      }
+    }
+  }
+  $output .= drupal_render_children($form);
+  return $output;
 }
