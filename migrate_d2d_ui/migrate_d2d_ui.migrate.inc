@@ -702,7 +702,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
           '@count' => format_plural($this->nodeCounts[$row->type], '1 node', '@count nodes')));
         $form['type'][$row->type] = array(
           '#type' => 'select',
-          '#title' => $row->name,
+          '#title' => $title,
           '#options' => $options,
           '#default_value' => $default_value,
         );
@@ -710,7 +710,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
     }
 
     // Set our theme function for this form
-    $form['#theme'] = 'migrate_d2d_ui_content_type_form';
+    $form['type']['#theme'] = 'migrate_d2d_ui_content_type_form';
 
     return $form;
   }
@@ -1074,32 +1074,22 @@ class MigrateD2DWizard extends MigrateUIWizard {
  */
 function theme_migrate_d2d_ui_content_type_form($variables) {
   $output = '';
-  $form = $variables['form'];
+  $form = $variables['type'];
   $elements = element_children($form);
   if (!empty($elements)) {
-    // Iterate over the elements - render directly except for type,
-    // which we'll pack into a table.
-    foreach ($elements as $key) {
-      if ($key == 'type') {
-        $header = array(t('Source type'), t('Destination type'));
-        $rows = array();
-        $mapping_elements = element_children($form[$key]);
-        foreach ($mapping_elements as $mapping_key) {
-          if ($form['type'][$mapping_key]['#type'] == 'select') {
-            $row = array();
-            $title = $form['type'][$mapping_key]['#title'];
-            unset($form['type'][$mapping_key]['#title']);
-            $row[] = $title;
-            $row[] = drupal_render($form['type'][$mapping_key]);
-            $rows[] = $row;
-          }
-        }
-        $output .= theme('table', array('header' => $header, 'rows' => $rows));
-      }
-      else {
-        $output .= drupal_render($form[$key]);
+    $header = array(t('Source type'), t('Destination type'));
+    $rows = array();
+    foreach ($elements as $source_type) {
+      if ($form[$source_type]['#type'] == 'select') {
+        $row = array();
+        $title = $form[$source_type]['#title'];
+        unset($form[$source_type]['#title']);
+        $row[] = $title;
+        $row[] = drupal_render($form[$source_type]);
+        $rows[] = $row;
       }
     }
+    $output .= theme('table', array('header' => $header, 'rows' => $rows));
   }
   $output .= drupal_render_children($form);
   return $output;

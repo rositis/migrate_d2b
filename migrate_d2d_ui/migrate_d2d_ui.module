@@ -8,8 +8,8 @@
 function migrate_d2d_ui_theme() {
   return array(
     'migrate_d2d_ui_content_type_form' => array(
-      'arguments' => array('form' => NULL),
-      'render element' => 'form',
+      'arguments' => array('type' => NULL),
+      'render element' => 'type',
       'file' => '/migrate_d2d_ui.migrate.inc',
     ),
     'migrate_d2d_ui_role_form' => array(
