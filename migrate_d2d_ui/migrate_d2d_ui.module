@@ -17,5 +17,10 @@ function migrate_d2d_ui_theme() {
       'render element' => 'role',
       'file' => '/migrate_d2d_ui.migrate.inc',
     ),
+    'migrate_d2d_ui_format_form' => array(
+      'arguments' => array('format' => NULL),
+      'render element' => 'format',
+      'file' => '/migrate_d2d_ui.migrate.inc',
+    ),
   );
 }

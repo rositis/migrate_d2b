@@ -94,6 +94,13 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected $userDefaultValues = array();
 
   /**
+   * Mappings between text formats.
+   *
+   * @var array
+   */
+  protected $formatMappings = array();
+
+  /**
    * For each content type, mappings of its fields by machine name.
    *
    * @var array
@@ -125,6 +132,21 @@ class MigrateD2DWizard extends MigrateUIWizard {
     $this->addStep(t('Files'), 'fileForm');
     $this->addStep(t('Content Types'), 'contentTypeForm');
     $this->addStep(t('Review'), 'reviewForm');
+  }
+
+  /**
+   * Case-insensitively search for a value in an array.
+   *
+   * @param $value
+   * @param $array
+   */
+  protected function caseArraySearch($needle, $haystack) {
+    foreach ($haystack as $key => $value) {
+      if (!strcasecmp($needle, $value)) {
+        return $key;
+      }
+    }
+    return FALSE;
   }
 
   /**
@@ -305,8 +327,30 @@ class MigrateD2DWizard extends MigrateUIWizard {
 
     // @todo: AJAX to show/hide the following based on the do_migration checkbox
 
-    // Build select list from destination roles. Note we "do not import" by
-    // mapping the legacy role to authenticated user, essentially a no-op.
+    $source_class = "DrupalUser{$this->sourceVersion}Migration";
+    $temp_machine_name = md5(rand());
+    $arguments = array(
+      'group_name' => $this->groupName,
+      'source_connection' => $this->groupName . '_legacy',
+      'source_database' => $this->database,
+      'source_version' => $this->sourceVersion,
+      'class_name' => $source_class,
+      'description' => t('Temp user migration to fetch fields'),
+      'machine_name' => $temp_machine_name,
+    );
+    Migration::registerMigration($source_class, $temp_machine_name, $arguments);
+
+    $form += migrate_ui_mapping_edit_form($temp_machine_name);
+
+    // Roles will be mapped directly.
+    unset($form['field_mappings']['roles']);
+    unset($form['field_mappings']['role_names']);
+    unset($form['default_values']['roles']);
+    unset($form['default_values']['role_names']);
+
+    Migration::deregisterMigration($temp_machine_name);
+
+    // Build select list from destination roles.
     $base_options = array(
       '-1' => t('--Do not import--'),
       '0' => t('--Create role--'),
@@ -385,29 +429,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
       '#options' => $options,
       '#default_value' => DRUPAL_AUTHENTICATED_RID,
     );
-
-    $source_class = "DrupalUser{$this->sourceVersion}Migration";
-    $temp_machine_name = md5(rand());
-    $arguments = array(
-      'group_name' => $this->groupName,
-      'source_connection' => $this->groupName . '_legacy',
-      'source_database' => $this->database,
-      'source_version' => $this->sourceVersion,
-      'class_name' => $source_class,
-      'description' => t('Temp user migration to fetch fields'),
-      'machine_name' => $temp_machine_name,
-    );
-    Migration::registerMigration($source_class, $temp_machine_name, $arguments);
-
-    $form += migrate_ui_mapping_edit_form($temp_machine_name);
-
-    // Roles will be mapped directly.
-    unset($form['field_mappings']['roles']);
-    unset($form['field_mappings']['role_names']);
-    unset($form['default_values']['roles']);
-    unset($form['default_values']['role_names']);
-
-    Migration::deregisterMigration($temp_machine_name);
 
     return $form;
   }
@@ -712,6 +733,55 @@ class MigrateD2DWizard extends MigrateUIWizard {
     // Set our theme function for this form
     $form['type']['#theme'] = 'migrate_d2d_ui_content_type_form';
 
+    // Build select list from destination formats.
+    $base_options = array(
+      '-1' => t('--Do not import--'),
+//      '0' => t('--Create format--'),
+    );
+
+    // Destination formats
+    $result = db_select('filter_format', 'f')
+              ->fields('f', array('format', 'name'))
+              ->execute();
+    foreach ($result as $row) {
+      $format_options[$row->format] = $row->name;
+    }
+    if ($this->sourceVersion == '7') {
+      $table = 'filter_format';
+    }
+    else {
+      $table = 'filter_formats';
+    }
+    $result = $this->connection()->select($table, 'f')
+              ->fields('f', array('format', 'name'))
+              ->execute();
+    $form['format_overview'] = array(
+      '#prefix' => '<div>',
+      '#markup' => t('For each text format on the legacy site, choose whether ' .
+        'to ignore that format, or to assign a different format to content ' .
+        'with that legacy format.'),
+      '#suffix' => '</div>',
+    );
+    foreach ($result as $row) {
+      $options = $base_options + $format_options;
+      // If we have a match on format name, default the mapping to that match.
+      if ($match = $this->caseArraySearch($row->name, $format_options)) {
+        $default_value = $match;
+        unset($options['0']);
+      }
+      else {
+        $default_value = '-1';
+      }
+      $form['format'][$row->format] = array(
+        '#type' => 'select',
+        '#title' => $row->name,
+        '#options' => $options,
+        '#default_value' => $default_value,
+      );
+    }
+    // Set our theme function for this form
+    $form['format']['#theme'][] = 'migrate_d2d_ui_format_form';
+
     return $form;
   }
 
@@ -732,6 +802,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
       }
       $this->typeMappings[$source_type] = $dest_type;
     }
+    $this->formatMappings = $form_state['values']['format'];
   }
 
   /**
@@ -836,6 +907,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
       'source_connection' => $this->groupName . '_legacy',
       'source_database' => $this->database,
       'source_system' => t('Drupal @version', array('@version' => $this->sourceVersion)),
+      'format_mappings' => $this->formatMappings,
     );
 
     $message = t('<p>Please review your import settings. When you submit this
@@ -1116,6 +1188,35 @@ function theme_migrate_d2d_ui_role_form($variables) {
       unset($form[$source_role]['#title']);
       $row[] = drupal_render($form[$source_role]);
       $row[] = $title;
+      $rows[] = $row;
+    }
+    $output .= theme('table', array('header' => $header, 'rows' => $rows));
+  }
+  $output .= drupal_render_children($form);
+  return $output;
+}
+
+/**
+ * Theme function to layout format mappings in a table.
+ *
+ * @param array $variables
+ *
+ * @return string
+ *  Rendered markup.
+ */
+function theme_migrate_d2d_ui_format_form($variables) {
+  $output = '';
+  $form = $variables['format'];
+  $elements = element_children($form);
+  if (!empty($elements)) {
+    $header = array(t('Source format'), t('Destination format'));
+    $rows = array();
+    foreach ($elements as $source_format) {
+      $row = array();
+      $title = $form[$source_format]['#title'];
+      unset($form[$source_format]['#title']);
+      $row[] = $title;
+      $row[] = drupal_render($form[$source_format]);
       $rows[] = $row;
     }
     $output .= theme('table', array('header' => $header, 'rows' => $rows));
