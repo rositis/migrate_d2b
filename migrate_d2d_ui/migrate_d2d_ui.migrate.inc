@@ -1108,14 +1108,14 @@ function theme_migrate_d2d_ui_role_form($variables) {
   $form = $variables['role'];
   $elements = element_children($form);
   if (!empty($elements)) {
-    $header = array(t('Source role'), t('Destination role'));
+    $header = array(t('Destination role'), t('Source role'));
     $rows = array();
     foreach ($elements as $source_role) {
       $row = array();
       $title = $form[$source_role]['#title'];
       unset($form[$source_role]['#title']);
-      $row[] = $title;
       $row[] = drupal_render($form[$source_role]);
+      $row[] = $title;
       $rows[] = $row;
     }
     $output .= theme('table', array('header' => $header, 'rows' => $rows));
