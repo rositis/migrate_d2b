@@ -11,6 +11,11 @@ function migrate_d2d_ui_theme() {
       'arguments' => array('form' => NULL),
       'render element' => 'form',
       'file' => '/migrate_d2d_ui.migrate.inc',
-    )
+    ),
+    'migrate_d2d_ui_role_form' => array(
+      'arguments' => array('role' => NULL),
+      'render element' => 'role',
+      'file' => '/migrate_d2d_ui.migrate.inc',
+    ),
   );
 }

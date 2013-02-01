@@ -73,6 +73,20 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected $userFieldMappings = array();
 
   /**
+   * Mappings between role names.
+   *
+   * @var array
+   */
+  protected $roleMappings = array();
+
+  /**
+   * Default role to assign to users.
+   *
+   * @var string
+   */
+  protected $defaultRole = 'authenticated user';
+
+  /**
    * Default values associated with user field mappings.
    *
    * @var array
@@ -290,9 +304,92 @@ class MigrateD2DWizard extends MigrateUIWizard {
     );
 
     // @todo: AJAX to show/hide the following based on the do_migration checkbox
+
+    // Build select list from destination roles. Note we "do not import" by
+    // mapping the legacy role to authenticated user, essentially a no-op.
+    $base_options = array(
+      '-1' => t('--Do not import--'),
+      '0' => t('--Create role--'),
+    );
+    $result = db_select('role', 'r')
+              ->fields('r', array('name'))
+              ->condition('name', array('anonymous user', 'authenticated user'), 'NOT IN')
+              ->execute();
+    foreach ($result as $row) {
+      $role_options[$row->name] = $row->name;
+    }
+
+    // Go through the non-trivial source roles.
+    $result = $this->connection()->select('role', 'r')
+              ->fields('r', array('rid', 'name'))
+              ->condition('name', array('anonymous user', 'authenticated user'), 'NOT IN')
+              ->execute();
+    $source_roles = array();
+    foreach ($result as $row) {
+      $source_roles[$row->rid] = $row->name;
+    }
+
+    if (!empty($source_roles)) {
+      // Description
+      $form['role_overview'] = array(
+        '#prefix' => '<div>',
+        '#markup' => t('For each user role on the legacy site, choose whether ' .
+          'to ignore that role, to create it on this site, or to assign a different ' .
+          'role to users with that legacy role.'),
+        '#suffix' => '</div>',
+      );
+      foreach ($source_roles as $rid => $name) {
+        $options = $base_options + $role_options;
+        // If we have a match on role name, default the mapping to that match
+        // and remove the option to create a new type of that name.
+        if (in_array($name, $role_options)) {
+          $default_value = $row->type;
+          unset($options['0']);
+        }
+        else {
+          $default_value = '-1';
+        }
+        $count = $this->connection()->select('users_roles', 'ur')
+                      ->condition('rid', $rid)
+                      ->countQuery()
+                      ->execute()
+                      ->fetchField();
+        $title = t('@name (@count)', array('@name' => $name,
+          '@count' => format_plural($count, '1 user', '@count users')));
+        $form['role'][$name] = array(
+          '#type' => 'select',
+          '#title' => $title,
+          '#options' => $options,
+          '#default_value' => $default_value,
+        );
+      }
+      // Set our theme function for this form
+      $form['role']['#theme'][] = 'migrate_d2d_ui_role_form';
+    }
+    else {
+      $form['role_overview'] = array(
+        '#prefix' => '<div>',
+        '#markup' =>t('There are no user roles in the source site that are not already
+          in the destination site'),
+        '#suffix' => '</div>',
+      );
+    }
+
+    $options = array('authenticated user' => 'authenticated user') +
+               $role_options;
+    $form['default_role'] = array(
+      '#type' => 'select',
+      '#title' => t('Default role'),
+      '#description' => t('Choose the role to assign to any user accounts who ' .
+        'had none of the above roles on the legacy site'),
+      '#options' => $options,
+      '#default_value' => DRUPAL_AUTHENTICATED_RID,
+    );
+
     $source_class = "DrupalUser{$this->sourceVersion}Migration";
     $temp_machine_name = md5(rand());
     $arguments = array(
+      'group_name' => $this->groupName,
       'source_connection' => $this->groupName . '_legacy',
       'source_database' => $this->database,
       'source_version' => $this->sourceVersion,
@@ -304,47 +401,14 @@ class MigrateD2DWizard extends MigrateUIWizard {
 
     $form += migrate_ui_mapping_edit_form($temp_machine_name);
 
+    // Roles will be mapped directly.
+    unset($form['field_mappings']['roles']);
+    unset($form['field_mappings']['role_names']);
+    unset($form['default_values']['roles']);
+    unset($form['default_values']['role_names']);
+
     Migration::deregisterMigration($temp_machine_name);
 
-    return $form;
-
-    $result = $this->connection()->select('role', 'r')
-              ->fields('r', array('rid', 'name'))
-              ->condition('name', array('anonymous user', 'authenticated user'), 'NOT IN')
-              ->execute();
-    $candidates = array();
-    foreach ($result as $row) {
-      $d7_rid = db_select('role', 'r')
-                ->fields('r', array('rid'))
-                ->condition('name', $row->name)
-                ->execute()
-                ->fetchField();
-      if (!$d7_rid) {
-        $candidates[$row->rid] = $row->name;
-      }
-    }
-    if (!empty($candidates)) {
-      // Description
-      $form['role'] = array(
-        '#type' => 'fieldset',
-        '#description' => t('Select each user role you want created in the destination site:'),
-      );
-      foreach ($candidates as $rid => $name) {
-        $form['role'][$rid] = array(
-          '#type' => 'checkbox',
-          '#title' => $name,
-          '#default_value' => 1,
-        );
-      }
-    }
-    else {
-      $form['role'] = array(
-        '#prefix' => '<div>',
-        '#markup' =>t('There are no user roles in the source site that are not already
-          in the destination site'),
-        '#suffix' => '</div>',
-      );
-    }
     return $form;
   }
 
@@ -356,8 +420,28 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected function userFormValidate(&$form_state) {
     if ($form_state['values']['do_migration']) {
       $this->userMigration = TRUE;
-      $this->userFieldMappings = $form_state['values']['field_mappings'];
-      $this->userDefaultValues = $form_state['values']['default_values'];
+      foreach ($form_state['values']['field_mappings'] as $destination_field => $info) {
+        $this->userFieldMappings[$destination_field] = $info['mapping'];
+        $this->userDefaultValues[$destination_field] = $info['default_value'];
+      }
+      $this->roleMappings = $form_state['values']['role'];
+      $this->defaultRole = $form_state['values']['default_role'];
+      // Map "do not import" roles to the default role, and remove roles
+      // to be created so they get imported naturally.
+      foreach ($this->roleMappings as $source_role => $destination_role) {
+        if ($destination_role == '-1') {
+          $this->roleMappings[$source_role] = $this->defaultRole;
+        }
+        elseif ($destination_role == '0') {
+          unset($this->roleMappings[$source_role]);
+        }
+      }
+      // Default role needs to be a rid
+      $this->defaultRole = db_select('role', 'r')
+                           ->fields('r', array('rid'))
+                           ->condition('name', $this->defaultRole)
+                           ->execute()
+                           ->fetchField(0);
     }
     else {
       $this->userMigration = FALSE;
@@ -699,6 +783,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
     $source_class = "DrupalNode{$this->sourceVersion}Migration";
     $temp_machine_name = md5(rand());
     $arguments = array(
+      'group_name' => $this->groupName,
       'source_connection' => $this->groupName . '_legacy',
       'source_database' => $this->database,
       'source_version' => $this->sourceVersion,
@@ -734,7 +819,10 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected function fieldsFormValidate(&$form_state) {
     $type_mapping = $this->currentStep->getContext();
     $source_type = $type_mapping['source_type'];
-    $this->fieldMappings[$source_type] = $form_state['values']['field_mappings'];
+    foreach ($form_state['values']['field_mappings'] as $destination_field => $info) {
+      $this->fieldMappings[$destination_field] = $info['mapping'];
+      $this->defaultValues[$destination_field] = $info['default_value'];
+    }
     $this->comments[$source_type] = $form_state['values']['migrate_comments'];
   }
 
@@ -763,6 +851,14 @@ class MigrateD2DWizard extends MigrateUIWizard {
 
     $imports = $non_imports = '';
     if ($this->userMigration) {
+      $arguments = array(
+        'description' => t('Migration of roles from Drupal @version',
+                         array('@version' => $this->sourceVersion)),
+        'role_mappings' => $this->roleMappings,
+      );
+      $this->addMigration('Role', "DrupalRole{$this->sourceVersion}Migration",
+                          $arguments);
+
       $admin_name = $this->connection()->select('users', 'u')
                     ->fields('u', array('name'))
                     ->condition('uid', 1)
@@ -774,7 +870,12 @@ class MigrateD2DWizard extends MigrateUIWizard {
       $arguments = array(
         'description' => t('Migration of users from Drupal @version',
                  array('@version' => $this->sourceVersion)),
+        'role_migration' => $this->groupName . 'Role',
       );
+      $mapping = new MigrateFieldMapping('roles', 'roles');
+      $mapping->sourceMigration($this->groupName . 'Role')
+              ->defaultValue($this->defaultRole);
+      $arguments['field_mappings'][] = $mapping;
       foreach ($this->userFieldMappings as $destination_field => $source_field) {
         if ($source_field == -1) {
           $source_field = NULL;
@@ -911,6 +1012,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
             $source_field = NULL;
           }
           $mapping = new MigrateFieldMapping($destination_field, $source_field);
+          $mapping->defaultValue($this->defaultValues[$destination_field]);
           $arguments['field_mappings'][] = $mapping;
         }
         $this->addMigration('Node' . $arguments['source_type'],
@@ -998,6 +1100,35 @@ function theme_migrate_d2d_ui_content_type_form($variables) {
         $output .= drupal_render($form[$key]);
       }
     }
+  }
+  $output .= drupal_render_children($form);
+  return $output;
+}
+
+/**
+ * Theme function to layout role mappings in a table.
+ *
+ * @param array $variables
+ *
+ * @return string
+ *  Rendered markup.
+ */
+function theme_migrate_d2d_ui_role_form($variables) {
+  $output = '';
+  $form = $variables['role'];
+  $elements = element_children($form);
+  if (!empty($elements)) {
+    $header = array(t('Source role'), t('Destination role'));
+    $rows = array();
+    foreach ($elements as $source_role) {
+      $row = array();
+      $title = $form[$source_role]['#title'];
+      unset($form[$source_role]['#title']);
+      $row[] = $title;
+      $row[] = drupal_render($form[$source_role]);
+      $rows[] = $row;
+    }
+    $output .= theme('table', array('header' => $header, 'rows' => $rows));
   }
   $output .= drupal_render_children($form);
   return $output;
