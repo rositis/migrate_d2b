@@ -29,6 +29,30 @@ class DrupalFile6Migration extends DrupalFileMigration {
                  ->condition('name', 'file_directory_path')
                  ->execute()
                  ->fetchField());
+    if (!$this->legacyPath) {
+      // If features are in use, the variable may not be in the variables table,
+      // but we might find it strongarmed in cache.
+      $strongarm = Database::getConnection('default', $this->sourceConnection)
+               ->select('cache', 'c')
+               ->fields('c', array('data'))
+               ->condition('cid', 'strongarm')
+               ->execute()
+               ->fetchField();
+      if ($strongarm) {
+        $strongarm = unserialize($strongarm);
+        foreach ($strongarm as $key => $value) {
+          if ($key == 'file_directory_path') {
+            $this->legacyPath = $value;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!$this->legacyPath) {
+      $this->legacyPath = 'sites/default/files/';
+    }
+
     // Strip ./ from the beginning
     if (substr($this->legacyPath, 0, 2) == './') {
       $this->legacyPath = substr($this->legacyPath, 2);
