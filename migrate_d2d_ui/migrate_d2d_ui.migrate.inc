@@ -390,7 +390,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
         // If we have a match on role name, default the mapping to that match
         // and remove the option to create a new type of that name.
         if (in_array($name, $role_options)) {
-          $default_value = $row->type;
+          $default_value = $name;
           unset($options['0']);
         }
         else {
@@ -648,7 +648,9 @@ class MigrateD2DWizard extends MigrateUIWizard {
    * containing the destination machine_name (bundle).
    */
   protected function fileFormValidate(&$form_state) {
-    $this->sourceDirectory = $form_state['values']['source_directory'];
+    if (isset($form_state['values']['source_directory'])) {
+      $this->sourceDirectory = $form_state['values']['source_directory'];
+    }
   }
 
   /**
@@ -796,14 +798,16 @@ class MigrateD2DWizard extends MigrateUIWizard {
     // Start with ourselves
     $after = $this->currentStep;
     $this->typeMappings = array();
-    foreach ($form_state['values']['type'] as $source_type => $dest_type) {
-      // For each content type to be migrated, add a step to the wizard.
-      if ($dest_type != '0' && $dest_type != '-1') {
-        $context = array('source_type' => $source_type, 'dest_type' => $dest_type);
-        $after = $this->addStep(t('Field mappings for @type',
-          array('@type' => $source_type)), 'fieldsForm', $after, $context);
+    if (isset($form_state['values']['type'])) {
+      foreach ($form_state['values']['type'] as $source_type => $dest_type) {
+        // For each content type to be migrated, add a step to the wizard.
+        if ($dest_type != '0' && $dest_type != '-1') {
+          $context = array('source_type' => $source_type, 'dest_type' => $dest_type);
+          $after = $this->addStep(t('Field mappings for @type',
+            array('@type' => $source_type)), 'fieldsForm', $after, $context);
+        }
+        $this->typeMappings[$source_type] = $dest_type;
       }
-      $this->typeMappings[$source_type] = $dest_type;
     }
     $this->formatMappings = $form_state['values']['format'];
   }
