@@ -329,11 +329,14 @@ class MigrateD2DWizard extends MigrateUIWizard {
 
     $source_class = "DrupalUser{$this->sourceVersion}Migration";
     $temp_machine_name = md5(rand());
-    $arguments = array(
-      'group_name' => $this->groupName,
+    $group_arguments = array(
       'source_connection' => $this->groupName . '_legacy',
       'source_database' => $this->database,
       'source_version' => $this->sourceVersion,
+    );
+    MigrateGroup::register($this->groupName, $this->groupTitle, $group_arguments);
+    $arguments = array(
+      'group_name' => $this->groupName,
       'class_name' => $source_class,
       'description' => t('Temp user migration to fetch fields'),
       'machine_name' => $temp_machine_name,
@@ -853,11 +856,15 @@ class MigrateD2DWizard extends MigrateUIWizard {
     // Temporarily register a migration, as a lazy way to get the available fields.
     $source_class = "DrupalNode{$this->sourceVersion}Migration";
     $temp_machine_name = md5(rand());
-    $arguments = array(
-      'group_name' => $this->groupName,
+    $group_arguments = array(
       'source_connection' => $this->groupName . '_legacy',
       'source_database' => $this->database,
       'source_version' => $this->sourceVersion,
+    );
+    MigrateGroup::register($this->groupName, $this->groupTitle, $group_arguments);
+
+    $arguments = array(
+      'group_name' => $this->groupName,
       'class_name' => $source_class,
       'description' => t('Temp migration to fetch fields'),
       'machine_name' => $temp_machine_name,
