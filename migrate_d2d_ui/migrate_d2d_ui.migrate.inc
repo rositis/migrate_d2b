@@ -902,8 +902,8 @@ class MigrateD2DWizard extends MigrateUIWizard {
     $type_mapping = $this->currentStep->getContext();
     $source_type = $type_mapping['source_type'];
     foreach ($form_state['values']['field_mappings'] as $destination_field => $info) {
-      $this->fieldMappings[$destination_field] = $info['mapping'];
-      $this->defaultValues[$destination_field] = $info['default_value'];
+      $this->fieldMappings[$source_type][$destination_field] = $info['mapping'];
+      $this->defaultValues[$source_type][$destination_field] = $info['default_value'];
     }
     $this->comments[$source_type] = $form_state['values']['migrate_comments'];
   }
@@ -1086,16 +1086,20 @@ class MigrateD2DWizard extends MigrateUIWizard {
           $arguments['user_migration'] = $this->groupName . 'User';
         }
         // Hard to tell what node migrations might need files, so make sure they
-        // all fall after it.
+        // all fall after it. @todo: Be smarter about this
         if ($this->sourceDirectory) {
           $arguments['soft_dependencies'] = array('File');
         }
+
         foreach ($this->fieldMappings[$source_type] as $destination_field => $source_field) {
           if ($source_field == -1) {
             $source_field = NULL;
           }
           $mapping = new MigrateFieldMapping($destination_field, $source_field);
-          $mapping->defaultValue($this->defaultValues[$destination_field]);
+          $mapping->defaultValue($this->defaultValues[$source_type][$destination_field]);
+          if ($arguments['user_migration'] && $destination_field == 'uid') {
+            $mapping->sourceMigration($this->groupName . 'User');
+          }
           $arguments['field_mappings'][] = $mapping;
         }
         $this->addMigration('Node' . $arguments['source_type'],
