@@ -61,6 +61,11 @@ class DrupalFile6Migration extends DrupalFileMigration {
     $this->addUnmigratedSources(array('status'));
   }
 
+  /**
+   * Implements DrupalMigration::query().
+   *
+   * @return QueryConditionInterface|SelectQueryInterface
+   */
   protected function query() {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('files', 'f')
@@ -69,8 +74,14 @@ class DrupalFile6Migration extends DrupalFileMigration {
     return $query;
   }
 
+  /**
+   * Field mapping callback: Get the URI relative to the file directory.
+   *
+   * @param $uri
+   *
+   * @return mixed
+   */
   protected function fixUri($uri) {
-    // Get the URI relative to the file directory
     $result = str_replace($this->legacyPath, '', $uri);
     return $result;
   }
@@ -131,5 +142,18 @@ class DrupalPicture6Migration extends DrupalFile6Migration {
     // Return the field name the file migration expects.
     $query->addField('f', 'picture', 'filepath');
     return $query;
+  }
+
+  /**
+   * Field mapping callback: Override to leave as-is, file references in the
+   * users table are relative to the sites directory rather than the files
+   * directory.
+   *
+   * @param $uri
+   *
+   * @return mixed
+   */
+  protected function fixUri($uri) {
+    return $uri;
   }
 }
