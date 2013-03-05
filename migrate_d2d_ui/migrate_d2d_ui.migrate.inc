@@ -66,13 +66,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected $nodeCounts = array();
 
   /**
-   * Mappings of user fields by machine name.
-   *
-   * @var array
-   */
-  protected $userFieldMappings = array();
-
-  /**
    * Mappings between role names.
    *
    * @var array
@@ -87,13 +80,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected $defaultRole = 'authenticated user';
 
   /**
-   * Default values associated with user field mappings.
-   *
-   * @var array
-   */
-  protected $userDefaultValues = array();
-
-  /**
    * Mappings between text formats.
    *
    * @var array
@@ -101,25 +87,11 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected $formatMappings = array();
 
   /**
-   * For each content type, mappings of its fields by machine name.
-   *
-   * @var array
-   */
-  protected $fieldMappings = array();
-
-  /**
    * For each content type, whether to migrate its comments.
    *
    * @var array
    */
   protected $comments = array();
-
-  /**
-   * Default values associated with node field mappings.
-   *
-   * @var array
-   */
-  protected $defaultValues = array();
 
   /**
    * Lay out the basic steps of the wizard.
@@ -325,34 +297,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
       '#default_value' => TRUE,
     );
 
-    // @todo: AJAX to show/hide the following based on the do_migration checkbox
-
-    $source_class = "DrupalUser{$this->sourceVersion}Migration";
-    $temp_machine_name = md5(rand());
-    $group_arguments = array(
-      'source_connection' => $this->groupName . '_legacy',
-      'source_database' => $this->database,
-      'source_version' => $this->sourceVersion,
-    );
-    MigrateGroup::register($this->groupName, $this->groupTitle, $group_arguments);
-    $arguments = array(
-      'group_name' => $this->groupName,
-      'class_name' => $source_class,
-      'description' => t('Temp user migration to fetch fields'),
-      'machine_name' => $temp_machine_name,
-    );
-    Migration::registerMigration($source_class, $temp_machine_name, $arguments);
-
-    $form += migrate_ui_mapping_edit_form($temp_machine_name);
-
-    // Roles will be mapped directly.
-    unset($form['field_mappings']['roles']);
-    unset($form['field_mappings']['role_names']);
-    unset($form['default_values']['roles']);
-    unset($form['default_values']['role_names']);
-
-    Migration::deregisterMigration($temp_machine_name);
-
     // Build select list from destination roles.
     $base_options = array(
       '-1' => t('--Do not import--'),
@@ -444,10 +388,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected function userFormValidate(&$form_state) {
     if ($form_state['values']['do_migration']) {
       $this->userMigration = TRUE;
-      foreach ($form_state['values']['field_mappings'] as $destination_field => $info) {
-        $this->userFieldMappings[$destination_field] = $info['mapping'];
-        $this->userDefaultValues[$destination_field] = $info['default_value'];
-      }
       $this->roleMappings = $form_state['values']['role'];
       $this->defaultRole = $form_state['values']['default_role'];
       // Map "do not import" roles to the default role, and remove roles
@@ -800,112 +740,10 @@ class MigrateD2DWizard extends MigrateUIWizard {
     $this->typeMappings = array();
     if (isset($form_state['values']['type'])) {
       foreach ($form_state['values']['type'] as $source_type => $dest_type) {
-        // For each content type to be migrated, add a step to the wizard.
-        if ($dest_type != '0' && $dest_type != '-1') {
-          $context = array('source_type' => $source_type, 'dest_type' => $dest_type);
-          $after = $this->addStep(t('Field mappings for @type',
-            array('@type' => $source_type)), 'fieldsForm', $after, $context);
-        }
         $this->typeMappings[$source_type] = $dest_type;
       }
     }
     $this->formatMappings = $form_state['values']['format'];
-  }
-
-  /**
-   * Form for mapping fields between two specific content types.
-   */
-  function fieldsForm(&$form_state) {
-    $type_mapping = $this->currentStep->getContext();
-    $source_type = $type_mapping['source_type'];
-    $dest_type = $type_mapping['dest_type'];
-
-    if ($this->connection()->schema()->tableExists('comments')) {
-      $comment_table = 'comments';
-    }
-    elseif ($this->connection()->schema()->tableExists('comment')) {
-      $comment_table = 'comment';
-    }
-    else {
-      $comment_table = '';
-    }
-    $num_comments = 0;
-    if ($comment_table) {
-      $query = $this->connection()->select('node', 'n')
-               ->condition('n.type', $source_type);
-      $query->innerJoin($comment_table, 'c', 'n.nid=c.nid');
-      $num_comments = $query->countQuery()->execute()->fetchField();
-    }
-
-    if ($num_comments) {
-      $form['num_comments'] = array(
-        '#prefix' => '<div>',
-        '#markup' => t('Number of comments available to be migrated from your Drupal !version site: !count',
-                       array('!version' => $this->sourceVersion, '!count' => $num_comments)),
-        '#postfix' => '</div>',
-      );
-      $form['migrate_comments'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Import comments on this content type'),
-        '#default_value' => TRUE,
-      );
-    }
-    else {
-      $form['migrate_comments'] = array(
-        '#type' => 'value',
-        '#value' => FALSE,
-      );
-    }
-
-    // Temporarily register a migration, as a lazy way to get the available fields.
-    $source_class = "DrupalNode{$this->sourceVersion}Migration";
-    $temp_machine_name = md5(rand());
-    $group_arguments = array(
-      'source_connection' => $this->groupName . '_legacy',
-      'source_database' => $this->database,
-      'source_version' => $this->sourceVersion,
-    );
-    MigrateGroup::register($this->groupName, $this->groupTitle, $group_arguments);
-
-    $arguments = array(
-      'group_name' => $this->groupName,
-      'class_name' => $source_class,
-      'description' => t('Temp migration to fetch fields'),
-      'machine_name' => $temp_machine_name,
-      'source_type' => $source_type,
-      'destination_type' => $dest_type,
-    );
-    Migration::registerMigration($source_class, $temp_machine_name, $arguments);
-
-    $form['description'] = array(
-      '#prefix' => '<div>',
-      '#markup' => t('For each field in the destination type %destination, choose the source
-        site field from the source type %source to import its content.
-        You may also choose not to import a given field.',
-        array('%source' => $source_type, '%destination' => $dest_type)),
-      '#suffix' => '</div>',
-    );
-
-    $form += migrate_ui_mapping_edit_form($temp_machine_name);
-
-    Migration::deregisterMigration($temp_machine_name);
-
-    return $form;
-  }
-
-  /**
-   * Save away the chosen field mappings.
-   *
-   * @param array $form_state
-   */
-  protected function fieldsFormValidate(&$form_state) {
-    $type_mapping = $this->currentStep->getContext();
-    $source_type = $type_mapping['source_type'];
-    foreach ($form_state['values']['field_mappings'] as $destination_field => $info) {
-      $this->fieldMappings[$source_type][$destination_field] = $info['mapping'];
-      $this->defaultValues[$source_type][$destination_field] = $info['default_value'];
-    }
-    $this->comments[$source_type] = $form_state['values']['migrate_comments'];
   }
 
   /**
@@ -959,26 +797,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
       $mapping->sourceMigration($this->groupName . 'Role')
               ->defaultValue($this->defaultRole);
       $arguments['field_mappings'][] = $mapping;
-      foreach ($this->userFieldMappings as $destination_field => $source_field) {
-        if ($source_field == -1) {
-          $source_field = NULL;
-        }
-        $mapping = new MigrateFieldMapping($destination_field, $source_field);
-        $mapping->defaultValue($this->userDefaultValues[$destination_field]);
-        if ($destination_field == 'picture' && $source_field == 'picture' &&
-            $this->sourceDirectory) {
-          $picture_arguments = array(
-            'source_dir' => $this->sourceDirectory,
-            'description' => t('Migration of user pictures from Drupal @version',
-                     array('@version' => $this->sourceVersion)),
-          );
-          $this->addMigration('Picture', "DrupalPicture{$this->sourceVersion}Migration",
-                              $picture_arguments);
-          $arguments['picture_migration'] = $this->groupName . 'Picture';
-          $mapping->sourceMigration($this->groupName . 'Picture');
-        }
-        $arguments['field_mappings'][] = $mapping;
-      }
       $this->addMigration('User', "DrupalUser{$this->sourceVersion}Migration", $arguments);
     }
     else {
@@ -1090,22 +908,9 @@ class MigrateD2DWizard extends MigrateUIWizard {
         if ($this->sourceDirectory) {
           $arguments['soft_dependencies'] = array('File');
         }
-
-        foreach ($this->fieldMappings[$source_type] as $destination_field => $source_field) {
-          if ($source_field == -1) {
-            $source_field = NULL;
-          }
-          $mapping = new MigrateFieldMapping($destination_field, $source_field);
-          $mapping->defaultValue($this->defaultValues[$source_type][$destination_field]);
-          if ($arguments['user_migration'] && $destination_field == 'uid') {
-            $mapping->sourceMigration($this->groupName . 'User');
-          }
-          $arguments['field_mappings'][] = $mapping;
-        }
         $this->addMigration('Node' . $arguments['source_type'],
                             "DrupalNode{$this->sourceVersion}Migration", $arguments);
         if ($this->comments[$source_type]) {
-          unset($arguments['field_mappings']);
           $arguments['description'] = t('Migration of @source_type comments from Drupal @version',
                              array('@vocabulary' => $source_name,
                                    '@version' => $this->sourceVersion));
