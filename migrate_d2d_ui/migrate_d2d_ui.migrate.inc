@@ -964,6 +964,9 @@ class MigrateD2DWizard extends MigrateUIWizard {
         );
         if ($this->userMigration) {
           $arguments['user_migration'] = $this->groupName . 'User';
+          $mapping = new MigrateFieldMapping('uid', 'uid');
+          $mapping->sourceMigration($this->groupName . 'User');
+          $arguments['field_mappings'][] = $mapping;
         }
         // Hard to tell what node migrations might need files, so make sure they
         // all fall after it. @todo: Be smarter about this
