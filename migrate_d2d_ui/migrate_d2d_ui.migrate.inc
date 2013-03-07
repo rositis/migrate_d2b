@@ -49,6 +49,20 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected $termCounts = array();
 
   /**
+   * Whether we will be importing user pictures.
+   *
+   * @var bool
+   */
+  protected $pictureMigration = FALSE;
+
+  /**
+   * Whether we will be importing files other than user pictures.
+   *
+   * @var bool
+   */
+  protected $fileMigration = FALSE;
+
+  /**
    * Source site directory from which to fetch files.
    *
    * @var string
@@ -538,6 +552,25 @@ class MigrateD2DWizard extends MigrateUIWizard {
                      ->fetchField();
 
     if ($file_count) {
+      if ($this->userMigration) {
+        $form['picture_migration'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Perform import of user pictures'),
+          '#default_value' => TRUE,
+        );
+      }
+      else {
+        $form['picture_migration'] = array(
+          '#type' => 'value',
+          '#value' => FALSE,
+        );
+      }
+      $form['file_migration'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Perform import of files other than user pictures'),
+        '#default_value' => TRUE,
+      );
+
       $form['instructions'] = array(
         '#prefix' => '<div>',
         '#markup' => t('To be able to retrieve any uploaded files from your ' .
@@ -600,6 +633,12 @@ class MigrateD2DWizard extends MigrateUIWizard {
   protected function fileFormValidate(&$form_state) {
     if (isset($form_state['values']['source_directory'])) {
       $this->sourceDirectory = $form_state['values']['source_directory'];
+      if ($form_state['values']['picture_migration']) {
+        $this->pictureMigration = TRUE;
+      }
+      if ($form_state['values']['file_migration']) {
+        $this->fileMigration = TRUE;
+      }
     }
   }
 
@@ -807,6 +846,19 @@ class MigrateD2DWizard extends MigrateUIWizard {
       $mapping->sourceMigration($this->groupName . 'Role')
               ->defaultValue($this->defaultRole);
       $arguments['field_mappings'][] = $mapping;
+      if ($this->pictureMigration) {
+        $picture_arguments = array(
+          'source_dir' => $this->sourceDirectory,
+          'description' => t('Migration of user pictures from Drupal @version',
+            array('@version' => $this->sourceVersion)),
+        );
+        $this->addMigration('Picture', "DrupalPicture{$this->sourceVersion}Migration",
+                            $picture_arguments);
+        $arguments['picture_migration'] = $this->groupName . 'Picture';
+        $mapping = new MigrateFieldMapping('picture', 'picture');
+        $mapping->sourceMigration($this->groupName . 'Picture');
+        $arguments['field_mappings'][] = $mapping;
+      }
       $this->addMigration('User', "DrupalUser{$this->sourceVersion}Migration", $arguments);
     }
     else {
@@ -867,7 +919,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
       }
     }
 
-    if ($this->sourceDirectory) {
+    if ($this->fileMigration) {
       $arguments = array(
         'user_migration' => $this->groupName . 'User',
         'source_dir' => $this->sourceDirectory,
@@ -915,7 +967,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
         }
         // Hard to tell what node migrations might need files, so make sure they
         // all fall after it. @todo: Be smarter about this
-        if ($this->sourceDirectory) {
+        if ($this->fileMigration) {
           $arguments['soft_dependencies'] = array('File');
         }
         $this->addMigration('Node' . $arguments['source_type'],
