@@ -513,7 +513,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
                       ->execute()
                       ->fetchField();
       }
-      $title = t('Import @count from @name to:', array('@name' => $vocab->name,
+      $title = t('@name (@count)', array('@name' => $vocab->name,
         '@count' => format_plural($this->termCounts[$vocab->vid], '1 term', '@count terms')));
       $form['vocab'][$vocab->vid] = array(
         '#type' => 'select',
@@ -522,6 +522,9 @@ class MigrateD2DWizard extends MigrateUIWizard {
         '#default_value' => $default_value,
       );
     }
+
+    // Set our theme function for this form
+    $form['vocab']['#theme'][] = 'migrate_d2d_ui_vocab_form';
 
     return $form;
   }
@@ -1035,6 +1038,37 @@ function theme_migrate_d2d_ui_content_type_form($variables) {
   $elements = element_children($form);
   if (!empty($elements)) {
     $header = array(t('Source type'), t('Destination type'));
+    $rows = array();
+    foreach ($elements as $source_type) {
+      if ($form[$source_type]['#type'] == 'select') {
+        $row = array();
+        $title = $form[$source_type]['#title'];
+        unset($form[$source_type]['#title']);
+        $row[] = $title;
+        $row[] = drupal_render($form[$source_type]);
+        $rows[] = $row;
+      }
+    }
+    $output .= theme('table', array('header' => $header, 'rows' => $rows));
+  }
+  $output .= drupal_render_children($form);
+  return $output;
+}
+
+/**
+ * Theme function to layout vocabulary mappings in a table.
+ *
+ * @param array $variables
+ *
+ * @return string
+ *  Rendered markup.
+ */
+function theme_migrate_d2d_ui_vocab_form($variables) {
+  $output = '';
+  $form = $variables['vocab'];
+  $elements = element_children($form);
+  if (!empty($elements)) {
+    $header = array(t('Source vocabulary'), t('Destination vocabulary'));
     $rows = array();
     foreach ($elements as $source_type) {
       if ($form[$source_type]['#type'] == 'select') {
