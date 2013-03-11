@@ -694,6 +694,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
               ->orderBy('name')
               ->execute();
     foreach ($result as $row) {
+      // @todo: Skip any node type used by content_profile
       $options = $base_options + $node_options;
       // If we have a match on type name, default the mapping to that match
       // and remove the option to create a new type of that name.
@@ -724,6 +725,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
           '#options' => $options,
           '#default_value' => $default_value,
         );
+
       }
     }
 
@@ -933,6 +935,16 @@ class MigrateD2DWizard extends MigrateUIWizard {
                           $arguments);
     }
 
+    if ($this->connection()->schema()->tableExists('comments')) {
+      $comment_table = 'comments';
+    }
+    elseif ($this->connection()->schema()->tableExists('comment')) {
+      $comment_table = 'comment';
+    }
+    else {
+      $comment_table = '';
+    }
+
     foreach ($this->typeMappings as $source_type => $destination_type) {
       $source_name = $this->connection()->select('node_type', 'nt')
                            ->fields('nt', array('name'))
@@ -978,7 +990,16 @@ class MigrateD2DWizard extends MigrateUIWizard {
         }
         $this->addMigration('Node' . $arguments['source_type'],
                             "DrupalNode{$this->sourceVersion}Migration", $arguments);
-        if ($this->comments[$source_type]) {
+        $num_comments = 0;
+        if ($comment_table &&
+            (variable_get('comment_' . $destination_type, COMMENT_NODE_OPEN) != COMMENT_NODE_CLOSED)) {
+          $query = $this->connection()->select('node', 'n')
+                   ->condition('n.type', $source_type);
+          $query->innerJoin($comment_table, 'c', 'n.nid=c.nid');
+          $num_comments = $query->countQuery()->execute()->fetchField();
+        }
+
+        if ($num_comments) {
           $arguments['description'] = t('Migration of @source_type comments from Drupal @version',
                              array('@vocabulary' => $source_name,
                                    '@version' => $this->sourceVersion));
