@@ -156,11 +156,11 @@ abstract class DrupalUserMigration extends DrupalMigration {
    * @return QueryConditionInterface
    */
   protected function query() {
-    // Do not attempt to migrate the anonymous or admin user rows.
+    // Do not attempt to migrate the anonymous user row.
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('users', 'u')
              ->fields('u')
-             ->condition('u.uid', 1, '>');
+             ->condition('u.uid', 0, '>');
 //             ->orderBy('access');
     return $query;
   }
@@ -175,21 +175,25 @@ abstract class DrupalUserMigration extends DrupalMigration {
     if (parent::prepareRow($row) === FALSE) {
       return FALSE;
     }
-    /*
-    // On initial import, skip accounts with email addresses already existing
-    // on the destination side (we assume these are manually-created staff
-    // accounts or the like).
-    // TODO: Add options to overwrite such accounts, throw errors, etc.
-    if (empty($row->migrate_map_sourceid1)) {
-      $uid = db_select('users', 'u')
-             ->fields('u', array('uid'))
-             ->condition('mail', $row->mail)
-             ->execute()
-             ->fetchField();
-      if ($uid) {
-        return FALSE;
-      }
-    }*/
+
+    // If this email address already exists, just map to the existing uid
+    // and don't allow it to be deleted.
+    $new_uid = db_select('users', 'u')
+               ->fields('u', array('uid'))
+               ->condition('mail', $row->mail)
+               ->execute()
+               ->fetchField();
+    // If we haven't mapped the admin account based on email address, map it
+    // directly to the destination admin account.
+    if (!$new_uid && $row->uid == 1) {
+      $new_uid = 1;
+    }
+    if ($new_uid) {
+      $this->map->saveIDMapping($row, array($new_uid), MigrateMap::STATUS_IGNORED,
+        MigrateMap::ROLLBACK_PRESERVE);
+      $this->rollbackAction = MigrateMap::ROLLBACK_PRESERVE;
+      return FALSE;
+    }
 
     // Add the path to the source row, if relevant
     if ($this->moduleExists('path')) {
