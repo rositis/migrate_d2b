@@ -85,7 +85,7 @@ class DrupalVersion6 extends DrupalVersion {
     elseif ($entity_type != 'node') {
       return;
     }
-    elseif (empty($this->sourceFieldInfo)) {
+    else {
       migrate_instrument_start('DrupalVersion6::sourceFieldInfo');
 
       $this->entityType = $entity_type;
@@ -116,6 +116,7 @@ class DrupalVersion6 extends DrupalVersion {
             'columns' => $columns,
             'multiple' => $row->multiple,
             'db_storage' => $row->db_storage,
+            'bundle' => $bundle,
           );
         }
       }
@@ -221,6 +222,13 @@ class DrupalVersion6 extends DrupalVersion {
             $fix_field_names = array();
             $field_found = FALSE;
             foreach ($this->sourceFieldInfo as $field_name => $info) {
+              // All fields are stored in sourceFieldInfo. If there are
+              // multiple non-core profile node types, we need to specify
+              // which one each field belongs to.
+              if (isset($info['bundle']) && $info['bundle'] != $type) {
+                continue;
+              }
+
               if (isset($info['columns']) && !$info['multiple'] && $info['db_storage']) {
                 $i = 0;
                 foreach ($info['columns'] as $display_name => $column_name) {
