@@ -372,11 +372,14 @@ abstract class DrupalVersion {
    *  Type of entity ('node', 'user', etc.) for which to retrieve field info.
    * @param $bundle
    *  Bundle within the entity type (e.g., 'article', 'blog', etc.).
+   * @param $include_body
+   *  Treat a node body as if it were a custom field (for supporting
+   *  content_profile).
    *
    * @return array
    *  An array keyed by field name, with field labels as the values.
    */
-  public function getSourceFields($entity_type, $bundle) {
+  public function getSourceFields($entity_type, $bundle, $include_body = FALSE) {
     $this->populateSourceFieldInfo($entity_type, $bundle);
     $fields = array();
     foreach ($this->sourceFieldInfo as $field_name => $info) {
