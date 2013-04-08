@@ -393,9 +393,22 @@ class DrupalVersion6 extends DrupalVersion {
                ->condition('uid', $entity_id)
                ->condition('value', '', '<>');
       $query->innerJoin('profile_fields', 'f', 'v.fid=f.fid');
-      $query->fields('f', array('name'));
+      $query->fields('f', array('name', 'type'));
       $result = $query->execute();
       foreach ($result as $data_row) {
+        switch ($data_row->type) {
+          case 'checkbox':
+            switch (trim(strtolower($data_row->value))) {
+              case 'n':
+                $data_row->value = 0;
+                break;
+              case 'y':
+                $data_row->value = 1;
+                break;
+              default:
+                break;
+            }
+        }
         $row->{$data_row->name} = $data_row->value;
       }
 
