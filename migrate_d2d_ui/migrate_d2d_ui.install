@@ -1,0 +1,27 @@
+<?php
+
+/**
+ * @file
+ * Drupal-to-Drupal UI installation
+ */
+
+function migrate_d2d_ui_requirements($phase) {
+  $requirements = array();
+  if ($phase == 'install') {
+    $t = get_t();
+    if (class_exists('MigrateUIWizard')) {
+      $severity = REQUIREMENT_OK;
+      $description = '';
+    }
+    else {
+      $severity = REQUIREMENT_ERROR;
+      $description = $t('Migrate 2.6 or greater is required.');
+    }
+    $requirements['migrate_d2d_ui'] = array(
+      'title' => $t('UI for Drupal-to-Drupal migration'),
+      'description' => $description,
+      'severity' => $severity,
+    );
+  }
+  return $requirements;
+}

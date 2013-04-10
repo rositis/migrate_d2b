@@ -29,6 +29,30 @@ class DrupalFile6Migration extends DrupalFileMigration {
                  ->condition('name', 'file_directory_path')
                  ->execute()
                  ->fetchField());
+    if (!$this->legacyPath) {
+      // If features are in use, the variable may not be in the variables table,
+      // but we might find it strongarmed in cache.
+      $strongarm = Database::getConnection('default', $this->sourceConnection)
+               ->select('cache', 'c')
+               ->fields('c', array('data'))
+               ->condition('cid', 'strongarm')
+               ->execute()
+               ->fetchField();
+      if ($strongarm) {
+        $strongarm = unserialize($strongarm);
+        foreach ($strongarm as $key => $value) {
+          if ($key == 'file_directory_path') {
+            $this->legacyPath = $value;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!$this->legacyPath) {
+      $this->legacyPath = 'sites/default/files/';
+    }
+
     // Strip ./ from the beginning
     if (substr($this->legacyPath, 0, 2) == './') {
       $this->legacyPath = substr($this->legacyPath, 2);
@@ -37,6 +61,11 @@ class DrupalFile6Migration extends DrupalFileMigration {
     $this->addUnmigratedSources(array('status'));
   }
 
+  /**
+   * Implements DrupalMigration::query().
+   *
+   * @return QueryConditionInterface|SelectQueryInterface
+   */
   protected function query() {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('files', 'f')
@@ -45,8 +74,14 @@ class DrupalFile6Migration extends DrupalFileMigration {
     return $query;
   }
 
+  /**
+   * Field mapping callback: Get the URI relative to the file directory.
+   *
+   * @param $uri
+   *
+   * @return mixed
+   */
   protected function fixUri($uri) {
-    // Get the URI relative to the file directory
     $result = str_replace($this->legacyPath, '', $uri);
     return $result;
   }
