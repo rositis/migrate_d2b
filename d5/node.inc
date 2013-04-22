@@ -48,8 +48,8 @@ class DrupalNode5Migration extends DrupalNodeMigration {
              ->fields('n', array('nid', 'vid', 'title',
                  'uid', 'status', 'created', 'changed', 'comment', 'promote',
                  'moderate', 'sticky'))
-             ->condition('type', $this->sourceType)
-             ->orderBy('changed');
+             ->condition('n.type', $this->sourceType)
+             ->orderBy('n.changed');
     $query->innerJoin('node_revisions', 'nr', 'n.vid=nr.vid');
     $query->fields('nr', array('body', 'teaser', 'format'));
     // Pick up simple CCK fields

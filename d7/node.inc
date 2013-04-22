@@ -46,8 +46,8 @@ class DrupalNode7Migration extends DrupalNodeMigration {
              ->fields('n', array('nid', 'vid', 'language', 'title', 'uid',
                'status', 'created', 'changed', 'comment', 'promote', 'sticky',
                'tnid', 'translate'))
-             ->condition('type', $this->sourceType)
-             ->orderBy('changed');
+             ->condition('n.type', $this->sourceType)
+             ->orderBy('n.changed');
     return $query;
   }
 }
