@@ -156,6 +156,9 @@ class DrupalVersion7 extends DrupalVersion {
           else {
             $index = $display_name;
           }
+          if (isset($row->$index) && !is_array($row->$index)) {
+            $row->$index = array($row->$index);
+          }
           $row->{$index}[] = $field_row->$column_name;
         }
       }
