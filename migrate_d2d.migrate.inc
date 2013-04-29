@@ -70,6 +70,8 @@ abstract class DrupalMigration extends DynamicMigration {
    * source_version - Major version number (as an integer) of the source install.
    * machine_name - Machine name under which a particular migration is registered.
    * description - Description of the migration.
+   * group_name - The group (import job) containing this migration (import
+   *  task).
    *
    * Optional arguments:
    *
@@ -90,6 +92,9 @@ abstract class DrupalMigration extends DynamicMigration {
    * @param array $arguments
    */
   public function __construct($arguments) {
+    if (empty($arguments['group_name'])) {
+      $arguments['group_name'] = 'default';
+    }
     $group = MigrateGroup::getInstance($arguments['group_name']);
     $group_arguments = $group->getArguments();
     $this->arguments = $group_arguments + $arguments;
