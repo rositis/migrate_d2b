@@ -4,7 +4,7 @@
  * Base classes for all Drupal-to-Drupal migration classes.
  */
 
-abstract class DrupalMigration extends DynamicMigration {
+abstract class DrupalMigration extends Migration {
   /**
    * Connection key for the DatabaseConnection holding the source Drupal
    * installation.
@@ -92,12 +92,8 @@ abstract class DrupalMigration extends DynamicMigration {
    * @param array $arguments
    */
   public function __construct($arguments) {
-    if (empty($arguments['group_name'])) {
-      $arguments['group_name'] = 'default';
-    }
-    $group = MigrateGroup::getInstance($arguments['group_name']);
-    $group_arguments = $group->getArguments();
-    $this->arguments = $group_arguments + $arguments;
+    parent::__construct($arguments);
+
     $this->sourceVersion = $this->arguments['source_version'];
     if (isset($this->arguments['version_class'])) {
       $version_class = $this->arguments['version_class'];
@@ -112,11 +108,10 @@ abstract class DrupalMigration extends DynamicMigration {
     elseif (!is_object($this->arguments['group'])) {
       $this->arguments['group'] = MigrateGroup::getInstance($this->arguments['group']);
     }
-    parent::__construct($this->arguments['group']);
     $this->sourceConnection = $this->arguments['source_connection'];
-    if (!empty($group_arguments['source_database'])) {
+    if (!empty($this->arguments['source_database'])) {
       Database::addConnectionInfo($this->sourceConnection, 'default',
-                                  $group_arguments['source_database']);
+                                  $this->arguments['source_database']);
     }
     if (!empty($this->arguments['source_type'])) {
       $this->sourceType = $this->arguments['source_type'];
