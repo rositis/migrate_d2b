@@ -31,9 +31,15 @@ class DrupalNode5Migration extends DrupalNodeMigration {
     $this->source = new MigrateDrupal5SourceSQL($query, $this->sourceFields, NULL,
       $this->sourceOptions);
 
-    $this->addFieldMapping('body:summary', 'teaser');
-    $this->addFieldMapping('body:format', 'format')
-         ->callbacks(array($this, 'mapFormat'));
+    if (field_info_instance('node', 'body', $this->destinationType)) {
+      $this->addFieldMapping('body:summary', 'teaser');
+      $this->addFieldMapping('body:format', 'format')
+           ->callbacks(array($this, 'mapFormat'));
+    }
+    else {
+      $this->addUnmigratedSources(array('teaser', 'format'));
+    }
+
     $this->addFieldMapping(NULL, 'moderate');
   }
 

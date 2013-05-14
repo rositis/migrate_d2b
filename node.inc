@@ -97,11 +97,17 @@ abstract class DrupalNodeMigration extends DrupalMigration {
     );
 
     // Setup common mappings
-    $this->addSimpleMappings(array('title', 'body', 'status', 'created', 'changed',
+    $this->addSimpleMappings(array('title', 'status', 'created', 'changed',
       'comment', 'promote', 'sticky'));
 
-    $this->addFieldMapping('body:language')
-         ->defaultValue($this->defaultLanguage);
+    if (field_info_instance('node', 'body', $this->destinationType)) {
+      $this->addFieldMapping('body', 'body');
+      $this->addFieldMapping('body:language')
+           ->defaultValue($this->defaultLanguage);
+    }
+    else {
+      $this->addUnmigratedSources(array('body'));
+    }
 
     $this->addUnmigratedSources(array('vid'));
     $this->addUnmigratedDestinations(array('is_new', 'revision',
