@@ -28,6 +28,8 @@ class DrupalComment5Migration extends DrupalCommentMigration {
 
     $this->addFieldMapping('created', 'timestamp');
     $this->addFieldMapping('changed', 'timestamp');
+    $this->addFieldMapping('status', 'status')
+         ->callbacks(array($this, 'handleStatus'));
   }
 
   /**
@@ -49,6 +51,25 @@ class DrupalComment5Migration extends DrupalCommentMigration {
           ->orderBy('timestamp');
 
     return $query;
+  }
+
+  /**
+   * Default status flag values flipped in D7. Non-standard statuses are kept.
+   *
+   * @param $value
+   *
+   * @return int
+   */
+  protected function handleStatus($value) {
+    if ($value == 0) {
+      return 1;
+    }
+    elseif ($value == 1) {
+      return 0;
+    }
+    else {
+      return $value;
+    }
   }
 
   /**
