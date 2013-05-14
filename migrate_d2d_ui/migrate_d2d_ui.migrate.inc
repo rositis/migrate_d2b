@@ -114,7 +114,9 @@ class MigrateD2DWizard extends MigrateUIWizard {
     parent::__construct();
     $this->addStep(t('Credentials'), 'sourceDataForm');
     $this->addStep(t('Users'), 'userForm');
-    $this->addStep(t('Taxonomy'), 'taxonomyForm');
+    if (module_exists('taxonomy')) {
+      $this->addStep(t('Taxonomy'), 'taxonomyForm');
+    }
     $this->addStep(t('Files'), 'fileForm');
     $this->addStep(t('Content Types'), 'contentTypeForm');
     $this->addStep(t('Review'), 'reviewForm');
