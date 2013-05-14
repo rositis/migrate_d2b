@@ -68,10 +68,10 @@ abstract class DrupalUserMigration extends DrupalMigration {
       'user', 'user');
 
     if ($this->moduleExists('path')) {
-      $this->sourceFields['path'] = array('label' => t('Path alias'));
+      $this->sourceFields['path'] = t('Path alias');
     }
     if ($this->roleMigration) {
-      $this->sourceFields['roles'] = array('label' => t('Roles'));
+      $this->sourceFields['roles'] = t('Roles');
     }
 
     if (!isset($this->sourceOptions['track_changes'])) {

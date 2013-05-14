@@ -73,7 +73,7 @@ abstract class DrupalNodeMigration extends DrupalMigration {
 
     $this->sourceFields += $this->version->getSourceFields('node', $this->sourceType);
     if ($this->moduleExists('path')) {
-      $this->sourceFields['path'] = array('label' => t('Path alias'));
+      $this->sourceFields['path'] = t('Path alias');
     }
 
     $this->destination = new MigrateDestinationNode($this->destinationType);
