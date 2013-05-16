@@ -190,8 +190,9 @@ abstract class DrupalUserMigration extends DrupalMigration {
     }
 
     if (!empty($new_uid)) {
+      $hash = isset($row->migrate_map_hash) ? $row->migrate_map_hash : NULL;
       $this->map->saveIDMapping($row, array($new_uid), MigrateMap::STATUS_IGNORED,
-        MigrateMap::ROLLBACK_PRESERVE, $row->migrate_map_hash);
+        MigrateMap::ROLLBACK_PRESERVE, $hash);
       $this->rollbackAction = MigrateMap::ROLLBACK_PRESERVE;
       return FALSE;
     }
