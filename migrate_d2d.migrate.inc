@@ -63,6 +63,14 @@ abstract class DrupalMigration extends Migration {
   protected $formatMappings = array();
 
   /**
+   * Set to TRUE to suppress highwater marks or track_changes (i.e., to only
+   * import new items, skipping updated items, on subsequent imports).
+   *
+   * @var bool
+   */
+  protected $newOnly = FALSE;
+
+  /**
    * Required arguments:
    *
    * source_connection - Connection key for the DatabaseConnection holding the
@@ -88,6 +96,9 @@ abstract class DrupalMigration extends Migration {
    *  derived from the machine name).
    * version_class - The name of a custom DrupalVersion class overriding the
    *  default derived from source_version.
+   * new_only - For any destination types that support highwater marks or
+   *  track_changes, suppress that support so repeated migrations only import
+   *  new items.
    *
    * @param array $arguments
    */
@@ -135,6 +146,10 @@ abstract class DrupalMigration extends Migration {
     }
     else {
       $this->formatMappings = $this->version->getDefaultFormatMappings();
+    }
+
+    if (!empty($this->arguments['new_only'])) {
+      $this->newOnly = $this->arguments['new_only'];
     }
   }
 

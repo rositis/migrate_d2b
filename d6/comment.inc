@@ -15,11 +15,13 @@ class DrupalComment6Migration extends DrupalCommentMigration {
   public function __construct(array $arguments) {
     parent::__construct($arguments);
 
-    $this->highwaterField = array(
-      'name' => 'timestamp',
-      'alias' => 'c',
-      'type' => 'int',
-    );
+    if (!$this->newOnly) {
+      $this->highwaterField = array(
+        'name' => 'timestamp',
+        'alias' => 'c',
+        'type' => 'int',
+      );
+    }
 
     // Version-specific field mappings
     $this->addFieldMapping('comment_body', 'comment');

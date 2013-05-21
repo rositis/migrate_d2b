@@ -74,7 +74,7 @@ abstract class DrupalUserMigration extends DrupalMigration {
       $this->sourceFields['roles'] = t('Roles');
     }
 
-    if (!isset($this->sourceOptions['track_changes'])) {
+    if (!isset($this->sourceOptions['track_changes']) && !$this->newOnly) {
       $this->sourceOptions['track_changes'] = TRUE;
     }
 
