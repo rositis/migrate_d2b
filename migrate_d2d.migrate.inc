@@ -139,13 +139,6 @@ abstract class DrupalMigration extends Migration {
   }
 
   /**
-   * Use the explicit machine_name argument as this migration's machine name.
-   */
-  protected function generateMachineName($class_name = NULL) {
-    return $this->arguments['machine_name'];
-  }
-
-  /**
    * @abstract
    * The base source query for this migration.
    *
