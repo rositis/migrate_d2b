@@ -72,9 +72,9 @@ class DrupalVersion6 extends DrupalVersion {
    *
    * @param $entity_type
    * @param $bundle
-   * @param $include_body
+   * @param $include_title_body
    */
-  protected function populateSourceFieldInfo($entity_type, $bundle, $include_body = FALSE) {
+  protected function populateSourceFieldInfo($entity_type, $bundle, $include_title_body = FALSE) {
     if ($entity_type == 'user') {
       // Get core profile fields.
       $this->profileFields();
@@ -91,42 +91,70 @@ class DrupalVersion6 extends DrupalVersion {
 
       $this->entityType = $entity_type;
       $this->bundle = $bundle;
-      // Standalone nodes handle the body through the core migration, but for
-      // content_profile nodes we need to deal with it here.
-      if ($include_body) {
-        $label = Database::getConnection('default', $this->arguments['source_connection'])
+      // Standalone nodes handle the title and body through the core migration,
+      // but for content_profile nodes we need to deal with them here.
+      if ($include_title_body) {
+        $type_info = Database::getConnection('default',
+                                         $this->arguments['source_connection'])
                          ->select('node_type', 'nt')
-                         ->fields('nt', array('body_label'))
+                         ->fields('nt', array('has_title', 'title_label',
+                                              'has_body', 'body_label'))
                          ->condition('type', $bundle)
                          ->condition('has_body', 1)
                          ->execute()
-                         ->fetchField();
-        if ($label) {
-          // To hopefully uniquify the machine name, use the content_profile
-          // node type.
-          $this->sourceFieldInfo['field_' . $bundle . '_body'] = array('label' => $label,
-                                                         'type' => 'body');
+                         ->fetchObject();
+        // To hopefully uniquify the machine names, use the content_profile
+        // node type in the name.
+        if ($type_info->has_title) {
+          $this->sourceFieldInfo['field_' . $bundle . '_title'] =
+            array('label' => $type_info->title_label, 'type' => 'title');
+        }
+        if ($type_info->has_body) {
+          $this->sourceFieldInfo['field_' . $bundle . '_body'] =
+            array('label' => $type_info->body_label, 'type' => 'body');
         }
       }
 
       // Get each field attached to this type.
-      if (Database::getConnection('default', $this->arguments['source_connection'])
+      if (Database::getConnection('default',
+                                  $this->arguments['source_connection'])
             ->schema()->tableExists('content_node_field_instance')) {
-        $query = Database::getConnection('default', $this->arguments['source_connection'])
+        $query = Database::getConnection('default',
+                                         $this->arguments['source_connection'])
                  ->select('content_node_field_instance', 'i')
-                 ->fields('i', array('label'))
+                 ->fields('i', array('label', 'widget_settings'))
                  ->condition('type_name', $bundle);
-        $query->innerJoin('content_node_field', 'f', 'i.field_name = f.field_name');
-        $query->fields('f', array('field_name', 'type', 'db_columns', 'multiple', 'db_storage'));
+        $query->innerJoin('content_node_field', 'f',
+                          'i.field_name = f.field_name');
+        $query->fields('f', array('field_name', 'type', 'db_columns',
+                                  'global_settings', 'multiple', 'db_storage'));
         $result = $query->execute();
         foreach ($result as $row) {
           $field_name = trim($row->field_name);
-          $db_columns = $db_columns = !empty($row->db_columns) ? unserialize($row->db_columns) : array();
+          $db_columns = $db_columns = !empty($row->db_columns) ?
+            unserialize($row->db_columns) : array();
           $columns = array();
           foreach ($db_columns as $column_name => $column_info) {
-            $display_name = $field_name . ':' . $column_name;
-            $column_name = $field_name . '_' . $column_name;
-            $columns[$display_name] = $column_name;
+            // Special handling for the stuff packed into filefield's "data"
+            if ($row->type == 'filefield' && $column_name == 'data') {
+              $widget_settings = unserialize($row->widget_settings);
+              $global_settings = unserialize($row->global_settings);
+              if ($widget_settings['custom_alt']) {
+                $columns[$field_name . ':alt'] = $field_name . '_alt';
+              }
+              if ($widget_settings['custom_title']) {
+                $columns[$field_name . ':title'] = $field_name . '_title';
+              }
+              if ($global_settings['description_field']) {
+                $columns[$field_name . ':description'] =
+                  $field_name . '_description';
+              }
+            }
+            else {
+              $display_name = $field_name . ':' . $column_name;
+              $column_name = $field_name . '_' . $column_name;
+              $columns[$display_name] = $column_name;
+            }
           }
           $this->sourceFieldInfo[$field_name] = array(
             'label' => $row->label,
@@ -222,6 +250,14 @@ class DrupalVersion6 extends DrupalVersion {
               }
               $result = $query->execute();
               foreach ($result as $field_row) {
+                $data = NULL;
+                // Unserialize file field data to break into alt/title/description.
+                if ($this->sourceFieldInfo[$field_name]['type'] == 'filefield') {
+                  $data_column_name = $field_name . '_data';
+                  if (isset($field_row->$data_column_name)) {
+                    $data = unserialize($field_row->$data_column_name);
+                  }
+                }
                 $i = 0;
                 foreach ($this->sourceFieldInfo[$field_name]['columns'] as $display_name => $column_name) {
                   if ($i++ == 0) {
@@ -233,7 +269,19 @@ class DrupalVersion6 extends DrupalVersion {
                   if (isset($row->$index) && !is_array($row->$index)) {
                     $row->$index = array($row->$index);
                   }
-                  $row->{$index}[] = $field_row->$column_name;
+                  // File field subfields need to be pulled from $data.
+                  if ($display_name == "$field_name:alt") {
+                    $row->{$index}[] = $data['alt'];
+                  }
+                  elseif ($display_name == "$field_name:title") {
+                    $row->{$index}[] = $data['title'];
+                  }
+                  elseif ($display_name == "$field_name:description") {
+                    $row->{$index}[] = $data['description'];
+                  }
+                  else {
+                    $row->{$index}[] = $field_row->$column_name;
+                  }
                 }
               }
             }
@@ -413,11 +461,14 @@ class DrupalVersion6 extends DrupalVersion {
             }
             break;
           case 'date':
-            // Dates may be serialized arrays.
+            // Dates may be serialized arrays or NULLs.
             if (strpos($data_row->value, 'a:') === 0) {
               $date_array = unserialize($data_row->value);
               $data_row->value = $date_array['year'] . '-' . $date_array['month']
                 . '-' . $date_array['day'];
+            }
+            elseif (strpos($data_row->value, 'N;') === 0) {
+              $data_row->value = NULL;
             }
             break;
         }
