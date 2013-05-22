@@ -139,13 +139,13 @@ class DrupalVersion6 extends DrupalVersion {
             if ($row->type == 'filefield' && $column_name == 'data') {
               $widget_settings = unserialize($row->widget_settings);
               $global_settings = unserialize($row->global_settings);
-              if ($widget_settings['custom_alt']) {
+              if (!empty($widget_settings['custom_alt'])) {
                 $columns[$field_name . ':alt'] = $field_name . '_alt';
               }
-              if ($widget_settings['custom_title']) {
+              if (!empty($widget_settings['custom_title'])) {
                 $columns[$field_name . ':title'] = $field_name . '_title';
               }
-              if ($global_settings['description_field']) {
+              if (!empty($global_settings['description_field'])) {
                 $columns[$field_name . ':description'] =
                   $field_name . '_description';
               }
@@ -177,6 +177,36 @@ class DrupalVersion6 extends DrupalVersion {
       foreach ($result as $row) {
         $this->sourceFieldInfo[$row->vid] = array('label' => $row->name, 'type' => 'taxonomy_term');
       }
+      // If the upload table exists and the type has attachments enabled,
+      // include upload data.
+      if (Database::getConnection('default',
+                                  $this->arguments['source_connection'])
+            ->schema()->tableExists('upload')) {
+        $upload =
+          Database::getConnection('default', $this->arguments['source_connection'])
+                     ->select('variable', 'v')
+                     ->fields('v', array('value'))
+                     ->condition('name', 'upload_' . $bundle)
+                     ->execute()
+                     ->fetchField();
+        if ($upload) {
+          $upload = unserialize($upload);
+        }
+        else {
+          $upload = 1;
+        }
+        if ($upload) {
+          $this->sourceFieldInfo['upload'] = array('label' => t('Upload'),
+            'type' => 'upload');
+          $this->sourceFieldInfo['upload:description'] =
+            array('label' => t('Upload description'), 'type' => 'upload');
+          $this->sourceFieldInfo['upload:list'] =
+            array('label' => t('Upload list'), 'type' => 'upload');
+          $this->sourceFieldInfo['upload:weight'] =
+            array('label' => t('Upload weight'), 'type' => 'upload');
+        }
+      }
+
       migrate_instrument_stop('DrupalVersion6::sourceFieldInfo');
     }
   }
@@ -345,8 +375,9 @@ class DrupalVersion6 extends DrupalVersion {
         }
       }
 
-      // And. load up the data for taxonomy terms
-      $query = Database::getConnection('default', $this->arguments['source_connection'])
+      // And, load up the data for taxonomy terms.
+      $query = Database::getConnection('default',
+                                       $this->arguments['source_connection'])
                ->select('term_node', 'tn')
                ->fields('tn', array('tid'))
                ->condition('tn.vid', $revision_id);
@@ -355,6 +386,24 @@ class DrupalVersion6 extends DrupalVersion {
       $result = $query->execute();
       foreach ($result as $term_row) {
         $row->{$term_row->vid}[] = $term_row->tid;
+      }
+    }
+
+    if (Database::getConnection('default',
+                                $this->arguments['source_connection'])
+          ->schema()->tableExists('upload')) {
+      $result =
+        Database::getConnection('default', $this->arguments['source_connection'])
+                   ->select('upload', 'u')
+                   ->fields('u', array('fid', 'description', 'list', 'weight'))
+                   ->condition('vid', $revision_id)
+                   ->orderBy('weight')
+                   ->execute();
+      foreach ($result as $upload_row) {
+        $row->upload[] = $upload_row->fid;
+        $row->{'upload:description'}[] = $upload_row->description;
+        $row->{'upload:list'}[] = $upload_row->list;
+        $row->{'upload:weight'}[] = $upload_row->weight;
       }
     }
   }
