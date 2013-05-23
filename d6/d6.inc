@@ -245,22 +245,25 @@ class DrupalVersion6 extends DrupalVersion {
     else {
       return;
     }
-    $schema = Database::getConnection('default', $this->arguments['source_connection'])->schema();
+
+    $schema = Database::getConnection('default',
+      $this->arguments['source_connection'])->schema();
     foreach ($entity_id_list as $index => $entity_id) {
       $revision_id = $revision_id_list[$index];
       // Load up field data for dynamically mapped fields
       foreach ($this->sourceFieldInfo as $field_name => $field_info) {
         if ($field_info['type'] != 'taxonomy_term') {
-          if ($field_info['type'] == 'body') {
-            // Special handling to accomodate content_profile bodies.
-            $body = Database::getConnection('default', $this->arguments['source_connection'])
-                                   ->select('node_revisions', 'nr')
-                                   ->fields('nr', array('body'))
-                                   ->condition('vid', $revision_id)
-                                   ->execute()
-                                   ->fetchField();
-            if ($body) {
-              $row->$field_name = $body;
+          if ($field_info['type'] == 'body' || $field_info['type'] == 'title') {
+            // Special handling to accomodate content_profile titles and bodies.
+            $value = Database::getConnection('default',
+                       $this->arguments['source_connection'])
+                     ->select('node_revisions', 'nr')
+                     ->fields('nr', array($field_info['type']))
+                     ->condition('vid', $revision_id)
+                     ->execute()
+                     ->fetchField();
+            if ($value) {
+              $row->$field_name = $value;
             }
           }
           else {
