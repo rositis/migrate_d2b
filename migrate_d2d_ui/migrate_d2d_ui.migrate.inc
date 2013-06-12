@@ -940,11 +940,16 @@ class MigrateD2DWizard extends MigrateUIWizard {
                           $arguments);
     }
 
-    if ($this->connection()->schema()->tableExists('comments')) {
-      $comment_table = 'comments';
-    }
-    elseif ($this->connection()->schema()->tableExists('comment')) {
-      $comment_table = 'comment';
+    if (module_exists('comment')) {
+      if ($this->connection()->schema()->tableExists('comments')) {
+        $comment_table = 'comments';
+      }
+      elseif ($this->connection()->schema()->tableExists('comment')) {
+        $comment_table = 'comment';
+      }
+      else {
+        $comment_table = '';
+      }
     }
     else {
       $comment_table = '';
