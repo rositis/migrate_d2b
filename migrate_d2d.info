@@ -3,7 +3,7 @@ description = "Migration from one Drupal site to another, using migration mappin
 package = "Migration"
 core = 7.x
 
-dependencies[] = migrate
+dependencies[] = migrate (>7.x-2.5)
 
 files[] = migrate_d2d.migrate.inc
 
