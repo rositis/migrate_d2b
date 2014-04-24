@@ -219,7 +219,7 @@ class DrupalVersion5 extends DrupalVersion {
             $query = Database::getConnection('default', $this->arguments['source_connection'])
                      ->select($table, 'f')
                      ->fields('f')
-                     ->condition('nid', $entity_id);
+                     ->condition('vid', $revision_id);
             // There isn't always a delta,
             // @see http://drupal.org/node/1715244
             if ($schema->fieldExists($table, 'delta')) {
