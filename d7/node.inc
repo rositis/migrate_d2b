@@ -33,15 +33,7 @@ class DrupalNode7Migration extends DrupalNodeMigration {
       $this->addUnmigratedSources(array('body:summary', 'body:format'));
     }
 
-    /** @todo Prevent stub creation when tnid == 0
-    $this->addFieldMapping('tnid', 'tnid', FALSE)
-         ->sourceMigration($arguments['machine_name']);
-     */
-    $this->addFieldMapping('tnid', NULL);
-    $this->addFieldMapping(NULL, 'tnid');
-
-    $this->addFieldMapping('translate', 'translate');
-
+    $this->addSimpleMappings(array('tnid', 'translate'));
   }
 
   /**
@@ -59,4 +51,55 @@ class DrupalNode7Migration extends DrupalNodeMigration {
              ->orderBy('n.changed');
     return $query;
   }
+
+  public function prepareRow($row) {
+    if (parent::prepareRow($row) === FALSE) {
+      return FALSE;
+    }
+
+    // The property 'tnid' cannot be handled via sourceMigration() method
+    // because it might be 0 or the main node of translation set. We don't want
+    // to create a stub for such cases.
+    if (!empty($row->tnid)) {
+      $destination_ids = $this->getMap()->lookupDestinationID(array($row->tnid));
+      // There's no destination yet. Create a stub.
+      if (empty($destination_ids)) {
+        // Don't create stub for itself.
+        if ($row->tnid != $row->nid) {
+          // Check if 'tnid' is a node in the source set to prevent not
+          // updatable stubs.
+          $query = clone $this->query();
+          $query->condition('n.nid', $row->tnid);
+          $nid = $query->execute()->fetchField();
+          unset($query);
+          if ($nid) {
+            if ($tnids = $this->createStub(NULL)) {
+              // Save the mapping.
+              $this->map->saveIDMapping((object) array('nid' => $row->tnid), $tnids, MigrateMap::STATUS_NEEDS_UPDATE, $this->defaultRollbackAction);
+              $row->tnid = reset($tnids);
+            }
+          }
+        }
+        else {
+          $row->tnid = 0;
+          $row->_is_translation_source = TRUE;
+        }
+      }
+      else {
+        $row->tnid = $destination_ids['destid1'];
+      }
+    }
+  }
+
+  public function complete($node, stdClass $row) {
+    if (empty($row->_is_translation_source)) {
+      return;
+    }
+
+    db_update('node')
+      ->fields(array('tnid' => $node->nid))
+      ->condition('nid', $node->nid)
+      ->execute();
+  }
+
 }
