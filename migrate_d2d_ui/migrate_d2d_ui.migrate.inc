@@ -322,6 +322,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
               ->fields('r', array('name'))
               ->condition('name', array('anonymous user', 'authenticated user'), 'NOT IN')
               ->execute();
+    $role_options = array();
     foreach ($result as $row) {
       $role_options[$row->name] = $row->name;
     }
