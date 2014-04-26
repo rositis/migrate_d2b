@@ -95,7 +95,7 @@ class DrupalNode6Migration extends DrupalNodeMigration {
               $clean_name = str_replace(':', '_', $display_name);
               $this->fixFieldNames[$clean_name] = $display_name;
               if ($info['type'] == 'filefield' &&
-                  (strpos($display_name, ':list') || strpos($display_name, ':description'))) {
+                  (strpos($display_name, ':list') || strpos($display_name, ':description') || strpos($display_name, ':alt') || strpos($display_name, ':title'))) {
                 if (!$data) {
                   $this->fileDataFields[] = $field_name . '_data';
                   $query->addField('f', $field_name . '_data');
