@@ -189,10 +189,6 @@ class MigrateD2DWizard extends MigrateUIWizard {
 
     // Add driver specific configuration options.
     foreach ($drivers as $key => $driver) {
-      // @todo: For now skip pgsql, causes validation errors
-      if ($key == 'pgsql') {
-        continue;
-      }
       $form['driver']['#options'][$key] = $driver->name();
       $form['settings'][$key] = $driver->getFormOptions(array());
       // Rewrite descriptions, which assume the database is being selected to
@@ -225,6 +221,29 @@ class MigrateD2DWizard extends MigrateUIWizard {
     }
 
     return $form;
+  }
+
+  /**
+   * Override the basic form to add appropriate driver validation.
+   *
+   * @return array
+   */
+  public function form(&$form_state) {
+    $form = parent::form($form_state);
+
+    // Detect if we are on the DB step of migrate_d2d_ui wizard.
+    if (isset($form['driver'])) {
+      // Limit validation errors to fields associated with the selected DB
+      // driver. e.g. validate DB name/host for mysql but not for sqlite.
+      $validation = array();
+      $validation[] = array('driver');
+      if (isset($form_state['input']['driver'])) {
+        $validation[] = array('settings', $form_state['input']['driver']);
+      }
+      $form['actions']['next']['#limit_validation_errors'] = $validation;
+    }
+
+    return($form);
   }
 
   /**
