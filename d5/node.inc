@@ -101,7 +101,7 @@ class DrupalNode5Migration extends DrupalNodeMigration {
       }
     }
     // Don't populate summary if the teaser matches the generated summary.
-    if (empty($row->teaser) || $row->teaser != text_summary($row->body)) {
+    if (empty($row->teaser) || $row->teaser == text_summary($row->body)) {
       $row->teaser = '';
     }
   }
