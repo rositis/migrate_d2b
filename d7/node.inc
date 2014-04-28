@@ -49,6 +49,14 @@ class DrupalNode7Migration extends DrupalNodeMigration {
                'tnid', 'translate'))
              ->condition('n.type', $this->sourceType)
              ->orderBy('n.changed');
+    // Join node_counter for Statistics support
+    if (Database::getConnection('default', $this->sourceConnection)
+        ->schema()->tableExists('node_counter')) {
+      $query->leftJoin('node_counter', 'nc', 'n.nid=nc.nid');
+      $query->addField('nc', 'daycount');
+      $query->addField('nc', 'timestamp');
+      $query->addField('nc', 'totalcount');
+    }
     return $query;
   }
 
