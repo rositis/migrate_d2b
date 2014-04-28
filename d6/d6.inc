@@ -24,18 +24,18 @@ class DrupalVersion6 extends DrupalVersion {
   public function getDefaultFormatMappings() {
     migrate_instrument_start('DrupalVersion6::getDefaultFormatMappings');
     $format_mappings = array();
-    $result = Database::getConnection('default', $this->arguments['source_connection'])
+    $d6_formats = Database::getConnection('default', $this->arguments['source_connection'])
               ->select('filter_formats', 'f')
-              ->fields('f', array('format', 'name'))
-              ->execute();
-    foreach ($result as $format_row) {
-      $format = db_select('filter_format', 'f')
-                ->fields('f', array('format'))
-                ->condition('name', $format_row->name)
+              ->fields('f', array('name', 'format'))
+              ->execute()->fetchAllKeyed();
+    $d7_formats = db_select('filter_format', 'f')
+                ->fields('f', array('name', 'format'))
+                ->condition('name', array_keys($d6_formats), 'IN')
                 ->execute()
-                ->fetchField();
-      if ($format) {
-        $format_mappings[$format_row->format] = $format;
+                ->fetchAllKeyed();
+    foreach ($d6_formats as $name => $format) {
+      if (isset($d7_formats[$name])) {
+        $format_mappings[$format] = $d7_formats[$name];
       }
     }
     migrate_instrument_stop('DrupalVersion6::getDefaultFormatMappings');
