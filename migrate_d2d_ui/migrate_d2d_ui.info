@@ -1,5 +1,5 @@
 ; $Id$
-name = "UI for Drupal-to-Drupal migration"
+name = "Drupal-to-Drupal migration UI"
 description = "Support for migrating external Drupal sites into the current site"
 package = "Development"
 core = 7.x
