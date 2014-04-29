@@ -101,18 +101,19 @@ class DrupalVersion6 extends DrupalVersion {
                          ->fields('nt', array('has_title', 'title_label',
                                               'has_body', 'body_label'))
                          ->condition('type', $bundle)
-                         ->condition('has_body', 1)
                          ->execute()
                          ->fetchObject();
         // To hopefully uniquify the machine names, use the content_profile
-        // node type in the name.
-        if ($type_info->has_title) {
-          $this->sourceFieldInfo['field_' . $bundle . '_title'] =
-            array('label' => $type_info->title_label, 'type' => 'title');
-        }
-        if ($type_info->has_body) {
-          $this->sourceFieldInfo['field_' . $bundle . '_body'] =
-            array('label' => $type_info->body_label, 'type' => 'body');
+        // node type, with '_node_type' appended, in the name.
+        if (is_object($type_info)) {
+          if (!empty($type_info->has_title)) {
+            $this->sourceFieldInfo['field_' . $bundle . '_node_type_title'] =
+              array('label' => $type_info->title_label, 'type' => 'title');
+          }
+          if (!empty($type_info->has_body)) {
+            $this->sourceFieldInfo['field_' . $bundle . '_node_type_body'] =
+              array('label' => $type_info->body_label, 'type' => 'body');
+          }
         }
       }
 
