@@ -837,7 +837,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
     );
 
     $message = t('<p>Please review your migration settings. When you submit this
-      form, n migration job containing a migration task for each type of item to be
+      form, a migration job containing a migration task for each type of item to be
       imported will be created and you will be left at the
       dashboard.</p>');
 
