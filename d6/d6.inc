@@ -56,6 +56,7 @@ class DrupalVersion6 extends DrupalVersion {
                     ->select('url_alias', 'ua')
                     ->fields('ua', array('dst'))
                     ->condition('src', $source)
+                    ->orderBy('pid', 'DESC')
                     ->execute()
                     ->fetchField();
     }
