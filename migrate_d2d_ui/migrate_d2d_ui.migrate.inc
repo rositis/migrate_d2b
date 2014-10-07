@@ -286,6 +286,9 @@ class MigrateD2DWizard extends MigrateUIWizard {
         if ($site_name) {
           $this->groupTitle = $site_name;
           $this->groupName = preg_replace('/[^A-Za-z0-9]/', '', $site_name);
+          if (strlen($this->groupName) > 9) {
+            $this->groupName = substr(md5($this->groupName), 0, 9);
+          }
         }
         else {
           $this->groupName = $this->groupTitle = 'd' . $this->sourceVersion;
