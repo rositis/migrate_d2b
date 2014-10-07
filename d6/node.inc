@@ -41,6 +41,8 @@ class DrupalNode6Migration extends DrupalNodeMigration {
 
     $this->addFieldMapping('language', 'language')
          ->defaultValue($this->defaultLanguage);
+    $this->addFieldMapping('body:language', 'language', FALSE)
+         ->defaultValue($this->defaultLanguage);
 
     if (field_info_instance('node', 'body', $this->destinationType)) {
       $this->addFieldMapping('body:summary', 'teaser');
