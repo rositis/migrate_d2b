@@ -1004,7 +1004,7 @@ class MigrateD2DWizard extends MigrateUIWizard {
           'source_type' => $source_type,
           'destination_type' => $destination_type,
           'description' => t('Migration of @source_type nodes from Drupal @version',
-                   array('@vocabulary' => $source_name,
+                   array('@source_type' => $source_name,
                          '@version' => $this->sourceVersion)),
         );
         if ($this->userMigration) {
