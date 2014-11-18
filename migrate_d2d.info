@@ -8,6 +8,7 @@ dependencies[] = migrate (>7.x-2.5)
 files[] = migrate_d2d.migrate.inc
 
 ; Base classes
+files[] = block_custom.inc
 files[] = comment.inc
 files[] = entity.inc
 files[] = file.inc
@@ -20,6 +21,7 @@ files[] = user.inc
 
 ; D5 implementations
 files[] = d5/d5.inc
+files[] = d5/block_custom.inc
 files[] = d5/comment.inc
 files[] = d5/file.inc
 files[] = d5/node.inc
@@ -29,6 +31,7 @@ files[] = d5/user.inc
 
 ; D6 implementations
 files[] = d6/d6.inc
+files[] = d6/block_custom.inc
 files[] = d6/comment.inc
 files[] = d6/entity.inc
 files[] = d6/file.inc
@@ -41,6 +44,7 @@ files[] = d6/user.inc
 
 ; D7 implementations
 files[] = d7/d7.inc
+;files[] = d7/block_custom.inc
 files[] = d7/comment.inc
 files[] = d7/file.inc
 ;files[] = d7/menu.inc
