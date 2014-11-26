@@ -599,36 +599,52 @@ class MigrateD2DWizard extends MigrateUIWizard {
         '#default_value' => TRUE,
       );
 
-      $form['instructions'] = array(
-        '#prefix' => '<div>',
-        '#markup' => t('To be able to retrieve any uploaded files from your ' .
-          'legacy site, we need to know where to find them. If your legacy site '.
-          'is on the same web server as the destination site, or you have copied '.
-          'your file directory to the web server, please provide the full ' .
-          'file directory - for example, <em>/var/www/drupal/sites/example.com/files/</em>. ' .
-          'Otherwise, we need the web address of that directory. To determine that address: ' .
-          '<ol><li>Please visit a node on the site containing images, or a user ' .
-          'profile with an uploaded picture. Try to find an example where the ' .
-          'full resolution image is displayed.</li> '.
-          '<li>Right-click on the picture and look for an operation such as ' .
-          '<em>View Image</em>.</li> '.
-          '<li>Choose that function and look at the URL of the image - it will ' .
-          'usually look something like ' .
-          '<em>http://example.com/sites/default/files/pictures/picture-3.jpg</em> ' .
-          '(for user pictures) or ' .
-          '<em>http://example.com/sites/default/files/my-photo.jpg</em> ' .
-          '(for files uploaded to nodes).</li> ' .
-          '<li>If you see after the <em>files</em> portion of the path something ' .
-          'like <em>styles</em> or <em>imagecache</em>, you are most likely ' .
-          'looking at an automatically generated variation of the image, not the ' .
-          'original. It will take some trial and error, removing intermediate ' .
-          'portions of the path (such as <em>styles/medium/</em>) to find the ' .
-          'original image.</li> ' .
-          '<li>Please enter the full address of the files directory ' .
-          '(<em>http://example.com/sites/default/files/</em>) below. Leave the ' .
-          'field empty to skip migrating files.</li></ol>'),
-        '#suffix' => '</div>',
-      );
+      if ($this->sourceVersion == 7) {
+        $form['instructions'] = array(
+          '#prefix' => '<div>',
+          '#markup' => t('To be able to retrieve any uploaded files from your ' .
+            'legacy site, we need to know where to find them. If your legacy site '.
+            'is on the same web server as the destination site, or you have copied '.
+            'your file directory to the web server, please provide the full ' .
+            'file directory - for example, <em>/var/www/drupal/sites/example.com/files/</em>. ' .
+            'Otherwise, we need the web address of that directory. To determine that address: ' .
+            '<ol><li>Please visit a node on the site containing images, or a user ' .
+            'profile with an uploaded picture. Try to find an example where the ' .
+            'full resolution image is displayed.</li> '.
+            '<li>Right-click on the picture and look for an operation such as ' .
+            '<em>View Image</em>.</li> '.
+            '<li>Choose that function and look at the URL of the image - it will ' .
+            'usually look something like ' .
+            '<em>http://example.com/sites/default/files/pictures/picture-3.jpg</em> ' .
+            '(for user pictures) or ' .
+            '<em>http://example.com/sites/default/files/my-photo.jpg</em> ' .
+            '(for files uploaded to nodes).</li> ' .
+            '<li>If you see after the <em>files</em> portion of the path something ' .
+            'like <em>styles</em> or <em>imagecache</em>, you are most likely ' .
+            'looking at an automatically generated variation of the image, not the ' .
+            'original. It will take some trial and error, removing intermediate ' .
+            'portions of the path (such as <em>styles/medium/</em>) to find the ' .
+            'original image.</li> ' .
+            '<li>Please enter the full address of the files directory ' .
+            '(<em>http://example.com/sites/default/files/</em>) below. Leave the ' .
+            'field empty to skip migrating files.</li></ol>'),
+          '#suffix' => '</div>',
+        );
+      }
+      else {
+        $form['instructions'] = array(
+          '#prefix' => '<div>',
+          '#markup' => t('To be able to retrieve any uploaded files from your ' .
+            'legacy site, we need to know where to find them. If your legacy site '.
+            'is on the same web server as the destination site, or you have copied '.
+            'your file directory to the web server, please provide the full ' .
+            'file directory - for example, <em>/var/www/drupal/sites/example.com/files/</em>. ' .
+            'Otherwise, please provide the address of your legacy site (e.g., ' .
+            '<em>http://example.com/</em> below. Leave the ' .
+            'field empty to skip migrating files.'),
+          '#suffix' => '</div>',
+        );
+      }
 
       $form['description'] = array(
         '#prefix' => '<div>',

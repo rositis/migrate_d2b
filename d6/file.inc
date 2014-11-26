@@ -18,8 +18,7 @@ class DrupalFile6Migration extends DrupalFileMigration {
       );
     }
 
-    $this->addFieldMapping('value', 'filepath')
-         ->callbacks(array($this, 'fixUri'));
+    $this->addFieldMapping('value', 'filepath');
     $this->addFieldMapping('destination_file', 'filepath')
       ->callbacks(array($this, 'fixUri'));
     $this->addFieldMapping('timestamp', 'timestamp');
@@ -84,7 +83,12 @@ class DrupalFile6Migration extends DrupalFileMigration {
    * @return mixed
    */
   protected function fixUri($uri) {
+    // Try the legacy path, as best we could determine it.
     $result = str_replace($this->legacyPath, '', $uri);
+    if ($result == $uri) {
+      // That didn't work, so assume the prefix is of the form sites/%/files.
+      $result = preg_replace('|^sites/[^/]+/files/|i', '', $uri);
+    }
     return $result;
   }
 }
