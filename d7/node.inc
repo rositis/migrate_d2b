@@ -61,7 +61,7 @@ class DrupalNode7Migration extends DrupalNodeMigration {
                'status', 'created', 'changed', 'comment', 'promote', 'sticky',
                'tnid', 'translate'))
              ->condition('n.type', $this->sourceType)
-             ->orderBy('n.changed');
+             ->orderBy($this->newOnly ? 'n.nid' : 'n.changed');
     // Join node_counter for Statistics support
     if (Database::getConnection('default', $this->sourceConnection)
         ->schema()->tableExists('node_counter')) {

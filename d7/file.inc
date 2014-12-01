@@ -42,7 +42,7 @@ class DrupalFile7Migration extends DrupalFileMigration {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('file_managed', 'f')
              ->fields('f')
-             ->orderBy('timestamp');
+             ->orderBy($this->newOnly ? 'f.fid' : 'f.timestamp');
     return $query;
   }
 

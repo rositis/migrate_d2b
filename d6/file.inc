@@ -71,7 +71,7 @@ class DrupalFile6Migration extends DrupalFileMigration {
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('files', 'f')
              ->fields('f')
-             ->orderBy('timestamp');
+             ->orderBy($this->newOnly ? 'f.fid' : 'f.timestamp');
     return $query;
   }
 

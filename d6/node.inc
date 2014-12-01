@@ -70,7 +70,7 @@ class DrupalNode6Migration extends DrupalNodeMigration {
                  'uid', 'status', 'created', 'changed', 'comment', 'promote',
                  'moderate', 'sticky', 'tnid', 'translate'))
              ->condition('n.type', $this->sourceType)
-             ->orderBy('n.changed');
+             ->orderBy($this->newOnly ? 'n.nid' : 'n.changed');
     $query->innerJoin('node_revisions', 'nr', 'n.vid=nr.vid');
     $query->fields('nr', array('body', 'teaser', 'format'));
     // Pick up simple CCK fields
