@@ -846,6 +846,10 @@ class MigrateD2DWizard extends MigrateUIWizard {
    * to say yay or nay.
    */
   protected function reviewForm(&$form_state) {
+    // In case we've been going back-and-forth with Previous, make sure we
+    // start with no migrations - all migrations will be added here.
+    $this->migrations = array();
+
     $this->groupArguments = array(
       'encrypted_arguments' => array('source_database'),
       'source_version' => $this->sourceVersion,
