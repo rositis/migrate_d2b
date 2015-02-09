@@ -1,9 +1,9 @@
 name = "Drupal-to-Drupal migration"
-description = "Migration from one Drupal site to another, using migration mappings provided by CSV files"
+description = "Migration from one Drupal site to another"
 package = "Migration"
 core = 7.x
 
-dependencies[] = migrate (>=7.x-2.6)
+dependencies[] = migrate (>=7.x-2.7)
 
 files[] = migrate_d2d.migrate.inc
 
