@@ -18,6 +18,7 @@ files[] = node.inc
 files[] = role.inc
 files[] = taxonomy.inc
 files[] = user.inc
+files[] = variable.inc
 
 ; D5 implementations
 files[] = d5/d5.inc
