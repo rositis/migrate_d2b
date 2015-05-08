@@ -317,9 +317,9 @@ class DrupalVersion6 extends DrupalVersion {
                             isset($data['description'])) {
                       $row->{$index}[] = $data['description'];
                     }
-                    elseif (isset($field_row->$column_name)) {
-                      $row->{$index}[] = $field_row->$column_name;
-                    }
+                  }
+                  elseif (isset($field_row->$column_name)) {
+                    $row->{$index}[] = $field_row->$column_name;
                   }
                 }
               }
