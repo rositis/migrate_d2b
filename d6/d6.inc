@@ -304,19 +304,17 @@ class DrupalVersion6 extends DrupalVersion {
                     $row->$index = array($row->$index);
                   }
                   // File field subfields need to be pulled from $data.
-                  if (is_array($data) && $data) {
-                    if ($display_name == "$field_name:alt" &&
-                        isset($data['alt'])) {
-                      $row->{$index}[] = $data['alt'];
-                    }
-                    elseif ($display_name == "$field_name:title" &&
-                            isset($data['title'])) {
-                      $row->{$index}[] = $data['title'];
-                    }
-                    elseif ($display_name == "$field_name:description" &&
-                            isset($data['description'])) {
-                      $row->{$index}[] = $data['description'];
-                    }
+                  if ($display_name == "$field_name:alt" &&
+                      is_array($data) && isset($data['alt'])) {
+                    $row->{$index}[] = $data['alt'];
+                  }
+                  elseif ($display_name == "$field_name:title" &&
+                          is_array($data) && isset($data['title'])) {
+                    $row->{$index}[] = $data['title'];
+                  }
+                  elseif ($display_name == "$field_name:description" &&
+                          is_array($data) && isset($data['description'])) {
+                    $row->{$index}[] = $data['description'];
                   }
                   elseif (isset($field_row->$column_name)) {
                     $row->{$index}[] = $field_row->$column_name;
