@@ -95,7 +95,8 @@ abstract class DrupalNodeMigration extends DrupalMigration {
                        'alias' => 'n',
                       ),
       ),
-      MigrateDestinationNode::getKeySchema()
+      MigrateDestinationNode::getKeySchema(),
+      $this->mapConnection
     );
 
     if (!$this->newOnly) {

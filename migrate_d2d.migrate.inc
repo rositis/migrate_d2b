@@ -71,6 +71,15 @@ abstract class DrupalMigration extends Migration {
   protected $newOnly = FALSE;
 
   /**
+   * Controls what db connection the MigrateSQLMaps use.
+   *
+   * Pass $arguments['map_connection'] to change this variable.
+   *
+   * @var string
+   */
+  protected $mapConnection = 'default';
+
+  /**
    * Required arguments:
    *
    * source_connection - Connection key for the DatabaseConnection holding the
@@ -156,6 +165,10 @@ abstract class DrupalMigration extends Migration {
 
     if (!empty($this->arguments['new_only'])) {
       $this->newOnly = $this->arguments['new_only'];
+    }
+
+    if (!empty($this->arguments['map_connection'])) {
+      $this->mapConnection = $this->arguments['map_connection'];
     }
   }
 
