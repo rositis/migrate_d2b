@@ -1,12 +1,12 @@
 <?php
 /**
  * @file
- * Base classes for all Drupal-to-Drupal migration classes.
+ * Base classes for all Backdrop-to-Backdrop migration classes.
  */
 
-abstract class DrupalMigration extends Migration {
+abstract class BackdropMigration extends Migration {
   /**
-   * Connection key for the DatabaseConnection holding the source Drupal
+   * Connection key for the DatabaseConnection holding the source Backdrop
    * installation.
    *
    * @var
@@ -14,7 +14,7 @@ abstract class DrupalMigration extends Migration {
   protected $sourceConnection;
 
   /**
-   * The major version of the Drupal install serving as the migration
+   * The major version of the Backdrop install serving as the migration
    * source, e.g. '6'.
    *
    * @var int
@@ -46,17 +46,17 @@ abstract class DrupalMigration extends Migration {
 
   /**
    * While much of the version-specific work can be done in the leaf classes,
-   * to share data and behavior among all classes for a given Drupal version
+   * to share data and behavior among all classes for a given Backdrop version
    * we use this helper object.
    *
-   * @var DrupalVersion
+   * @var BackdropVersion
    */
   protected $version;
 
   /**
    * Map format mappings from the source system to the destination. Automated
-   * generation of these mappings is version-dependent (through Drupal 6 they
-   * were identified by numeric IDs, Drupal 7 introduced machine names).
+   * generation of these mappings is version-dependent (through Backdrop 6 they
+   * were identified by numeric IDs, Backdrop 7 introduced machine names).
    *
    * @var array
    */
@@ -83,7 +83,7 @@ abstract class DrupalMigration extends Migration {
    * Required arguments:
    *
    * source_connection - Connection key for the DatabaseConnection holding the
-   *  source Drupal installation.
+   *  source Backdrop installation.
    * source_version - Major version number (as an integer) of the source install.
    * machine_name - Machine name under which a particular migration is registered.
    * description - Description of the migration.
@@ -103,7 +103,7 @@ abstract class DrupalMigration extends Migration {
    * source_options - Array to be passed as options to source constructors,
    *  overriding the defaults (map_joinable FALSE, cache_counts TRUE, cache_key
    *  derived from the machine name).
-   * version_class - The name of a custom DrupalVersion class overriding the
+   * version_class - The name of a custom BackdropVersion class overriding the
    *  default derived from source_version.
    * new_only - For any destination types that support highwater marks or
    *  track_changes, suppress that support so repeated migrations only import
@@ -116,7 +116,7 @@ abstract class DrupalMigration extends Migration {
 
     if (empty($this->arguments['source_version'])) {
       throw new MigrateException(
-        t('No source_version provided in migrate_d2d migration arguments.'));
+        t('No source_version provided in migrate_d2b migration arguments.'));
     }
     else {
       $this->sourceVersion = $this->arguments['source_version'];
@@ -125,7 +125,7 @@ abstract class DrupalMigration extends Migration {
       $version_class = $this->arguments['version_class'];
     }
     else {
-      $version_class = 'DrupalVersion' . $this->sourceVersion;
+      $version_class = 'BackdropVersion' . $this->sourceVersion;
     }
     $this->version = new $version_class($this->arguments);
     if (!isset($this->arguments['group'])) {
@@ -149,8 +149,11 @@ abstract class DrupalMigration extends Migration {
     if (!empty($this->arguments['soft_dependencies'])) {
       $this->softDependencies = $this->arguments['soft_dependencies'];
     }
-    $this->sourceOptions = array('map_joinable' => FALSE, 'cache_counts' => TRUE,
-                     'cache_key' => 'migrate_' . $this->machineName);
+    $this->sourceOptions = array(
+      'map_joinable' => FALSE,
+      'cache_counts' => TRUE,
+      'cache_key' => 'migrate_' . $this->machineName,
+    );
     if (!empty($this->arguments['source_options'])) {
       $this->sourceOptions = array_merge($this->sourceOptions,
                                          $this->arguments['source_options']);
@@ -211,7 +214,7 @@ abstract class DrupalMigration extends Migration {
 
   /**
    * Check to see if a given module is enabled in the source installation.
-   * @todo: move to DrupalVersion?
+   * @todo: move to BackdropVersion?
    *
    * @param $module
    *  Name of module to check.
@@ -236,11 +239,11 @@ abstract class DrupalMigration extends Migration {
 
 /**
  * There should be an implementation of this abstract class, named
- * DrupalVersion{version #}, for each Drupal version supported as a source. It
+ * BackdropVersion{version #}, for each Backdrop version supported as a source. It
  * will implement any functions needed by multiple version-specific classes
  * (e.g., nodes as well as users).
  */
-abstract class DrupalVersion {
+abstract class BackdropVersion {
   /**
    * Arguments for the containing migration. Primarily of interest for
    * the source_connection.
@@ -290,7 +293,7 @@ abstract class DrupalVersion {
   /**
    * @abstract
    * Returns an array keyed by the source system's format identifier (integer ID
-   * or machine name), with the destination Drupal 7 machine name as the value.
+   * or machine name), with the destination Backdrop 7 machine name as the value.
    */
   abstract public function getDefaultFormatMappings();
 
@@ -389,7 +392,7 @@ abstract class DrupalVersion {
     return $row;
   }
 
-/**
+  /**
    * @abstract
    * Add CCK/core field values to the source row.
    *
