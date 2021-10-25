@@ -1,11 +1,12 @@
-name = "Drupal-to-Drupal migration"
-description = "Migration from one Drupal site to another"
+name = "Drupal-to-Backdrop migration"
+description = "Migration to Backdrop from a Drupal site running D7 or earlier."
 package = "Migration"
-core = 7.x
+backdrop = 1.x
+type = module
 
-dependencies[] = migrate (>=7.x-2.7)
+dependencies[] = migrate
 
-files[] = migrate_d2d.migrate.inc
+files[] = migrate_d2b.migrate.inc
 
 ; Base classes
 files[] = block_custom.inc

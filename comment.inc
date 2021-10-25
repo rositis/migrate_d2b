@@ -12,7 +12,7 @@
  * must be passed in the $arguments array:
  *
  * source_type - Drupal 6 content type machine name.
- * destination_type - Drupal 7 entity machine name (@todo: set automatically)
+ * destination_type - Backdrop entity machine name (@todo: set automatically)
  * node_migration - The node migration machine name for source_type
  *
  * The following optional arguments may be passed:
@@ -23,7 +23,7 @@
  * default_uid - Drupal 7 (destination) uid of the user account to use as
  *   the default.
  */
-abstract class DrupalCommentMigration extends DrupalMigration {
+abstract class BackdropCommentMigration extends BackdropMigration {
 
   protected $sourceType;
   protected $destinationType;
@@ -49,7 +49,7 @@ abstract class DrupalCommentMigration extends DrupalMigration {
       'comment', 'comment_node_' . $this->sourceType);
     // Create our three main objects - source, destination, and map
 
-    $this->source = new MigrateSourceSQL($this->query($this->sourceType),
+    $this->source = new MigrateSourceSQL($this->query($this->sourceType), // TODO: Sort this out.
       $this->sourceFields, NULL, $this->sourceOptions);
 
     $this->destination = new MigrateDestinationComment('comment_node_' . $this->destinationType);

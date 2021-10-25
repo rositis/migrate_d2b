@@ -8,22 +8,22 @@
  * Base class for all node migrations - handles commonalities across all
  * supported source Drupal versions.
  *
- * In addition to the arguments supported by DrupalMigration, the following
+ * In addition to the arguments supported by BackdropMigration, the following
  * must be passed in the $arguments array:
  *
  * source_type - Drupal 6 content type machine name.
- * destination_type - Drupal 7 content type machine name (bundle).
+ * destination_type - Backdrop content type machine name (bundle).
  *
  * The following optional arguments may be passed:
  *
  * user_migration - Machine name of a user migration, used to establish
  *   dependencies and a sourceMigration for the uid mapping.
- * default_uid - Drupal 7 (destination) uid of the user account to use as
+ * default_uid - Backdrop (destination) UID of the user account to use as
  *   the default.
  * default_language - Default language for the node and node body. Defaults
  *   to LANGUAGE_NONE.
  */
-abstract class DrupalNodeMigration extends DrupalMigration {
+abstract class BackdropNodeMigration extends BackdropMigration {
   /**
    * The source and destination content types (bundles) we're dealing with.
    */
@@ -38,6 +38,7 @@ abstract class DrupalNodeMigration extends DrupalMigration {
 
   /**
    * @param array $arguments
+   * @throws MigrateException
    */
   public function __construct(array $arguments) {
     $this->destinationType = $arguments['destination_type'];
@@ -192,7 +193,7 @@ abstract class DrupalNodeMigration extends DrupalMigration {
    */
   protected function createStub($migration) {
     migrate_instrument_start('DrupalNodeMigration::createStub');
-    $node = new stdClass;
+    $node = new Node;
     $node->title = t('Stub');
     $node->body = array(LANGUAGE_NONE => array(array("value" => t('Stub body'))));
     $node->type = $this->destination->getBundle();

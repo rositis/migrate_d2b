@@ -8,7 +8,7 @@
  * Base class for migrations of Drupal taxonomy terms from another Drupal
  * installation.
  */
-abstract class DrupalTermMigration extends DrupalMigration {
+abstract class BackdropTermMigration extends BackdropMigration {
   /**
    * The machine name, or vocabulary ID (pre-D7), of the vocabulary we're
    * migrating from.
@@ -35,6 +35,7 @@ abstract class DrupalTermMigration extends DrupalMigration {
    * destination_vocabulary - Machine name of the destination vocabulary.
    *
    * @param array $arguments
+   * @throws MigrateException
    */
   public function __construct(array $arguments) {
     parent::__construct($arguments);
@@ -47,7 +48,7 @@ abstract class DrupalTermMigration extends DrupalMigration {
     }
 
     // Create our three main objects - source, destination, and map
-    $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields,
+    $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields,  // TODO: Sort this out.
       NULL, $this->sourceOptions);
 
     $this->destination = new MigrateDestinationTerm($this->destinationVocabulary);
@@ -90,7 +91,8 @@ abstract class DrupalTermMigration extends DrupalMigration {
    * @param $row
    * @return bool
    */
-  public function prepareRow($row) {
+  public function prepareRow($row): bool
+  {
     if (parent::prepareRow($row) === FALSE) {
       return FALSE;
     }
@@ -110,6 +112,7 @@ abstract class DrupalTermMigration extends DrupalMigration {
    * Implementation of Migration::createStub().
    *
    * @param $migration
+   * @param $source_key
    * @return array|bool
    */
   protected function createStub($migration, $source_key) {
@@ -117,14 +120,14 @@ abstract class DrupalTermMigration extends DrupalMigration {
     if ($source_key[0] == 0) {
       return FALSE;
     }
-    
+
     migrate_instrument_start('DrupalTermMigration::createStub');
-    $vocab = taxonomy_vocabulary_machine_name_load($this->destinationVocabulary);
-    $term = new stdClass;
-    $term->vid = $vocab->vid;
+    $vocab = taxonomy_vocabulary_load($this->destinationVocabulary);
+    $term = new TaxonomyTerm;
+    $term->vid = $vocab->vid;  // TODO: How to get the VID in Backdrop?
     $term->name = t('Stub');
     taxonomy_term_save($term);
-    migrate_instrument_stop('DrupalTermMigration::createStub');
+    migrate_instrument_stop('BackdropTermMigration::createStub');
     if (isset($term->tid)) {
       return array($term->tid);
     }

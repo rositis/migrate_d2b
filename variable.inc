@@ -8,7 +8,7 @@
  * Base class for all variables migrations - handles commonalities across
  * all supported source Drupal versions.
  */
-abstract class DrupalVariableMigration extends DrupalMigration {
+abstract class DrupalVariableMigration extends BackdropMigration {
 
   /**
    * @param array $arguments
@@ -17,7 +17,7 @@ abstract class DrupalVariableMigration extends DrupalMigration {
     parent::__construct($arguments);
 
     // Create our three main objects - source, destination, and map
-    $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields,
+    $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields,  // TODO: Sort this out.
       NULL, $this->sourceOptions);
 
     $this->destination = new MigrateDestinationVariable();

@@ -8,7 +8,7 @@
  * Base class for all role migrations - handles commonalities across all
  * supported source Drupal versions.
  */
-abstract class DrupalRoleMigration extends DrupalMigration {
+abstract class BackdropRoleMigration extends BackdropMigration {
   /**
    * Allow the implementor to map roles by name (e.g., map the legacy "Fan Club"
    * role to the destination "fan club member" role).
@@ -53,7 +53,8 @@ abstract class DrupalRoleMigration extends DrupalMigration {
    *
    * @return QueryConditionInterface
    */
-  protected function query() {
+  protected function query(): QueryConditionInterface
+  {
     // Do not attempt to migrate the anonymous or authenticated roles.
     $query = Database::getConnection('default', $this->sourceConnection)
              ->select('role', 'r')
@@ -65,10 +66,12 @@ abstract class DrupalRoleMigration extends DrupalMigration {
   /**
    * Apply any role mappings
    *
+   * @param $role
    * @param $row
    * @return bool
    */
-  public function prepare($role, $row) {
+  public function prepare($role, $row): bool
+  {
     if (isset($this->roleMappings[$role->name])) {
       $destination_name = $this->roleMappings[$role->name];
       $destination_rid = db_select('role', 'r')

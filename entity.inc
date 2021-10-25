@@ -20,7 +20,7 @@
  * default_language - Default language for the node and node body. Defaults
  *   to LANGUAGE_NONE.
  */
-abstract class DrupalEntityMigration extends DrupalMigration {
+abstract class BackdropEntityMigration extends BackdropMigration {
   /**
    * The source node type.
    *
@@ -61,7 +61,7 @@ abstract class DrupalEntityMigration extends DrupalMigration {
     parent::__construct($arguments);
     $this->sourceFields += $this->version->getSourceFields('node', $this->sourceType);
 
-    $this->destination = new MigrateDestinationEntityAPI($this->entityType,
+    $this->destination = new MigrateDestinationEntityAPI($this->entityType, // TODO: Undefined class 'MigrateDestinationEntityAPI'. WTF?!
       $this->bundle, array('language' => $this->defaultLanguage));
 
     $this->map = new MigrateSQLMap($this->machineName,

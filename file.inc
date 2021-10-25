@@ -15,13 +15,13 @@
  * The following optional arguments may be passed:
  * user_migration - Machine name of a user migration, used to establish
  *   dependencies and a sourceMigration for the uid mapping.
- * default_uid - Drupal 7 (destination) uid of the user account to use as
+ * default_uid - Backdrop (destination) uid of the user account to use as
  *   the default.
  * bundle - File bundle to use as the target - defaults to 'file'.
  * file_class - Override for the default MigrateFileUri file class.
  * destination_dir - Destination directory for the files (defaults to public://).
  */
-abstract class DrupalFileMigration extends DrupalMigration {
+abstract class BackdropFileMigration extends BackdropMigration {
   public function __construct(array $arguments) {
     parent::__construct($arguments);
     if (!empty($arguments['user_migration'])) {
@@ -56,7 +56,7 @@ abstract class DrupalFileMigration extends DrupalMigration {
         $this->mapConnection
       );
     }
-    $this->source = new MigrateSourceSQL($this->query(),
+    $this->source = new MigrateSourceSQL($this->query(), // TODO: Sort this out.
       $this->sourceFields, NULL, $this->sourceOptions);
 
     $this->destination = new MigrateDestinationFile($arguments['bundle'],
@@ -68,7 +68,7 @@ abstract class DrupalFileMigration extends DrupalMigration {
     $this->addFieldMapping('source_dir')
          ->defaultValue($arguments['source_dir']);
     $this->addFieldMapping('file_replace')
-         ->defaultValue(MigrateFile::FILE_EXISTS_REUSE);
+         ->defaultValue(MigrateFile::FILE_EXISTS_REUSE); // TODO: Constant from base class '\MigrateFileBase' referenced via child class. Change this?
     $this->addFieldmapping('preserve_files')
           ->defaultValue(TRUE);
 

@@ -7,7 +7,7 @@
 /*
  * Class for menu link migrations: from {menu_links} into {menu_links}.
  */
-abstract class DrupalMenuLinksMigration extends DrupalMigration {
+abstract class BackdropMenuLinksMigration extends BackdropMigration {
 
   protected $menu_migration = '';
   protected $node_migrations = array();
@@ -16,15 +16,16 @@ abstract class DrupalMenuLinksMigration extends DrupalMigration {
 
   /**
    * @param array $arguments
-   *     $arguments['menu_migration'] should be defined -- menu links are normally
+   *     $arguments['menu_migration'] should be defined. Menu links are normally
    *        dependent on menus.
    *     $arguments['node_migrations'] is an optional array of node migrations,
-   *        required in order to update nids in link_path
+   *        required in order to update NIDs in link_path
    *     $arguments['term_migrations'] is an optional array of term migrations,
-   *        required in order to update tids in link_path
+   *        required in order to update TIDs in link_path
    *     $arguments['path_migration'] is an optional string defining the path migration,
    *        required in order to update URL aliases in link_path
    *
+   * @throws MigrateException
    * @todo: should the arguments be handled here or in d6/menu_links?
    */
   public function __construct(array $arguments) {
@@ -52,7 +53,7 @@ abstract class DrupalMenuLinksMigration extends DrupalMigration {
     parent::__construct($arguments);
 
     // Create our three main objects - source, destination, and map
-    $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields,
+    $this->source = new MigrateSourceSQL($this->query(), $this->sourceFields, // TODO: Sort this out.
       NULL, $this->sourceOptions);
 
     $this->destination = new MigrateDestinationMenuLinks();
@@ -81,7 +82,7 @@ abstract class DrupalMenuLinksMigration extends DrupalMigration {
    *  FALSE on failure
    */
   protected function createStub($migration) {
-    // if plid is 0, that means it has no parent, so don't create a stub
+    // if PLID is 0, that means it has no parent, so don't create a stub.
     if (!$migration->sourceValues->plid) {
       return FALSE;
     }

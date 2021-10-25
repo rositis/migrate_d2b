@@ -8,7 +8,7 @@
  * Base class for all user migrations - handles commonalities across all
  * supported source Drupal versions.
  */
-abstract class DrupalUserMigration extends DrupalMigration {
+abstract class BackdropUserMigration extends BackdropMigration {
   /**
    * If there's a user picture migration, keep track of the machine name
    * for dependency management and sourceMigration.
@@ -90,7 +90,7 @@ abstract class DrupalUserMigration extends DrupalMigration {
                        'alias' => 'u',
                       ),
       ),
-      DrupalDestinationUser::getKeySchema(),
+      BackdropDestinationUser::getKeySchema(),
       $this->mapConnection
     );
 
@@ -135,7 +135,7 @@ abstract class DrupalUserMigration extends DrupalMigration {
         $this->addUnmigratedSources(array('path'));
       }
     }
-
+    // TODO: Verify that the Pathauto module is still in Backdrop Contrib.
     if (module_exists('pathauto')) {
       $this->addFieldMapping('pathauto')
            ->description('By default, disable in favor of migrated paths')
@@ -149,13 +149,13 @@ abstract class DrupalUserMigration extends DrupalMigration {
    *
    * @return QueryConditionInterface
    */
-  protected function query() {
+  protected function query(): QueryConditionInterface
+  {
     // Do not attempt to migrate the anonymous user row.
-    $query = Database::getConnection('default', $this->sourceConnection)
+    return Database::getConnection('default', $this->sourceConnection)
              ->select('users', 'u')
              ->fields('u')
              ->condition('u.uid', 0, '>');
-    return $query;
   }
 
   /**
@@ -191,7 +191,7 @@ abstract class DrupalUserMigration extends DrupalMigration {
     }
 
     if (!empty($new_uid)) {
-      $hash = isset($row->migrate_map_hash) ? $row->migrate_map_hash : NULL;
+      $hash = $row->migrate_map_hash ?? NULL;
       $this->map->saveIDMapping($row, array($new_uid), MigrateMap::STATUS_IGNORED,
         MigrateMap::ROLLBACK_PRESERVE, $hash);
       $this->rollbackAction = MigrateMap::ROLLBACK_PRESERVE;
@@ -259,8 +259,13 @@ abstract class DrupalUserMigration extends DrupalMigration {
  * We add support for user paths, which is not supported by the core destination,
  * so document the presence of the field.
  */
-class DrupalDestinationUser extends MigrateDestinationUser {
-  public function fields($migration = NULL) {
+class BackdropDestinationUser extends MigrateDestinationUser {
+  /**
+   * @param null $migration
+   * @return array
+   */
+  public function fields($migration = NULL): array
+  {
     $fields = parent::fields($migration);
     $fields['path'] = t('Path alias');
     return $fields;

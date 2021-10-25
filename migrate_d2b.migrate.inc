@@ -110,6 +110,7 @@ abstract class BackdropMigration extends Migration {
    *  new items.
    *
    * @param array $arguments
+   * @throws MigrateException
    */
   public function __construct($arguments) {
     parent::__construct($arguments);
@@ -180,6 +181,7 @@ abstract class BackdropMigration extends Migration {
    * The base source query for this migration.
    *
    * @return QueryConditionInterface
+   * @TODO: Serious WTF here. Should this be a SelectQueryInterface? Hmm.
    */
   abstract protected function query();
 
@@ -263,7 +265,9 @@ abstract class BackdropVersion {
    *    columns: array of database columns for the field
    */
   protected $sourceFieldInfo = array();
-  public function getSourceFieldInfo() {
+
+  public function getSourceFieldInfo(): array
+  {
     return $this->sourceFieldInfo;
   }
 
@@ -316,15 +320,16 @@ abstract class BackdropVersion {
    *  Type of entity ('node', 'user', etc.) for which to retrieve field info.
    * @param $bundle
    *  Bundle within the entity type (e.g., 'article', 'blog', etc.).
-   * @param $include_body
+   * @param bool $include_body
    *  Treat a node body as if it were a custom field (for supporting
    *  content_profile).
    *
    * @return array
    *  An array keyed by field name, with field labels as the values.
    */
-  public function getSourceFields($entity_type, $bundle, $include_body = FALSE) {
-    $this->populateSourceFieldInfo($entity_type, $bundle);
+  public function getSourceFields($entity_type, $bundle, bool $include_body = FALSE): array
+  {
+    $this->populateSourceFieldInfo($entity_type, $bundle); // TODO: Method 'populateSourceFieldInfo' not found in BackdropVersion
     $fields = array();
     foreach ($this->sourceFieldInfo as $field_name => $info) {
       $fields[$field_name] = $info['label'];
@@ -348,6 +353,7 @@ abstract class BackdropVersion {
    *
    * @param $row
    * @param $entity_id
+   * @return mixed
    */
   public function getProfileValues($row, $entity_id) {
     $query = Database::getConnection('default', $this->arguments['source_connection'])
@@ -401,13 +407,13 @@ abstract class BackdropVersion {
    *
    * @return array
    */
-  abstract public function getSourceValues($row, $entity_id);
+  abstract public function getSourceValues($row, $entity_id): array;
 }
 
 /**
  * Implements hook_migrate_api().
  */
-function migrate_d2d_migrate_api() {
-  $api = array('api' => 2);
-  return $api;
+function migrate_d2b_migrate_api(): array
+{
+  return array('api' => 2);
 }
