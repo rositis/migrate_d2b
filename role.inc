@@ -8,7 +8,7 @@
  * Base class for all role migrations - handles commonalities across all
  * supported source Drupal versions.
  */
-abstract class BackdropRoleMigration extends BackdropMigration {
+abstract class DrupalRoleMigration extends DrupalMigration {
   /**
    * Allow the implementor to map roles by name (e.g., map the legacy "Fan Club"
    * role to the destination "fan club member" role).

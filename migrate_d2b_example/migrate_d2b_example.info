@@ -1,0 +1,12 @@
+name = "Sample Drupal 6 to Backdrop migration"
+description = "Migrate content from Drupal 6 site to Backdrop."
+package = "Development"
+backdrop = 1.x
+type = module
+hidden = TRUE
+
+dependencies[] = migrate
+dependencies[] = migrate_d2b
+
+files[] = migrate_d2b_example.migrate.inc
+files[] = node.inc

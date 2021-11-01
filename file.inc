@@ -21,7 +21,7 @@
  * file_class - Override for the default MigrateFileUri file class.
  * destination_dir - Destination directory for the files (defaults to public://).
  */
-abstract class BackdropFileMigration extends BackdropMigration {
+abstract class DrupalFileMigration extends DrupalMigration {
   public function __construct(array $arguments) {
     parent::__construct($arguments);
     if (!empty($arguments['user_migration'])) {

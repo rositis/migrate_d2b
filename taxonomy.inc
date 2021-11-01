@@ -8,7 +8,7 @@
  * Base class for migrations of Drupal taxonomy terms from another Drupal
  * installation.
  */
-abstract class BackdropTermMigration extends BackdropMigration {
+abstract class DrupalTermMigration extends DrupalMigration {
   /**
    * The machine name, or vocabulary ID (pre-D7), of the vocabulary we're
    * migrating from.

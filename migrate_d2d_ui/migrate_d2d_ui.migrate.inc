@@ -7,15 +7,14 @@
 /*
  * Implementation of hook_migrate_api().
  */
-function migrate_d2d_ui_migrate_api() {
-  $api = array(
+function migrate_d2b_ui_migrate_api() {
+  return array(
     'api' => 2,
-    'wizard classes' => array('MigrateD2DWizard'),
+    'wizard classes' => array('MigrateD2BWizard'),
   );
-  return $api;
 }
 
-class MigrateD2DWizard extends MigrateUIWizard {
+class MigrateD2BWizard extends MigrateUIWizard {
   /**
    * Database array for the source Drupal installation.
    *
@@ -125,8 +124,10 @@ class MigrateD2DWizard extends MigrateUIWizard {
   /**
    * Case-insensitively search for a value in an array.
    *
-   * @param $value
-   * @param $array
+   * @param $needle
+   * @param $haystack
+   *
+   * @return false|int|string
    */
   protected function caseArraySearch($needle, $haystack) {
     foreach ($haystack as $key => $value) {
@@ -142,14 +143,16 @@ class MigrateD2DWizard extends MigrateUIWizard {
    *
    * @return string
    */
-  public function getSourceName() {
+  public function getSourceName(): string
+  {
     return t('Drupal');
   }
 
   /**
    * Second step - find out how to get the source data.
    */
-  public function sourceDataForm(&$form_state) {
+  public function sourceDataForm(&$form_state): array
+  {
     $form['description'] = array(
       '#prefix' => '<p>',
       '#markup' => t('You will be led through a series of steps, allowing you to ' .
@@ -170,9 +173,9 @@ class MigrateD2DWizard extends MigrateUIWizard {
     );
 
     // Copied from includes/install.core.inc, install_settings_form()
-    require_once DRUPAL_ROOT . '/includes/install.inc';
-    $drivers = drupal_get_database_types();
-    $drivers_keys = array_keys($drivers);
+    require_once BACKDROP_ROOT . '/core/includes/install.inc';
+    $drivers = backdrop_load_database_driver(); // TODO: Note switch from drupal_get_database_types() to backdrop_load_database_driver
+    $drivers_keys = array_keys((array)$drivers);  // ERROR: Expected parameter of type 'array|Countable', 'DatabaseTasks|false' provided
 
     $form['driver'] = array(
       '#type' => 'radios',

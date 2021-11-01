@@ -23,7 +23,7 @@
  * default_language - Default language for the node and node body. Defaults
  *   to LANGUAGE_NONE.
  */
-abstract class BackdropNodeMigration extends BackdropMigration {
+abstract class DrupalNodeMigration extends DrupalMigration {
   /**
    * The source and destination content types (bundles) we're dealing with.
    */

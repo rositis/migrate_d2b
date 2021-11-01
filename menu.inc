@@ -7,7 +7,7 @@
 /*
  * Class for menu migrations: from {menu_custom} into {menu_custom}.
  */
-abstract class BackdropMenuMigration extends BackdropMigration {
+abstract class DrupalMenuMigration extends DrupalMigration {
   /**
    * @param array $arguments
    * @throws MigrateException

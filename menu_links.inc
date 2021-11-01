@@ -7,7 +7,7 @@
 /*
  * Class for menu link migrations: from {menu_links} into {menu_links}.
  */
-abstract class BackdropMenuLinksMigration extends BackdropMigration {
+abstract class DrupalMenuLinksMigration extends DrupalMigration {
 
   protected $menu_migration = '';
   protected $node_migrations = array();

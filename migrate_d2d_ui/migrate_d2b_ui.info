@@ -1,0 +1,11 @@
+; $Id$
+name = "Drupal-to-Backdrop migration UI"
+description = "Support for migrating external Drupal sites into the current Backdrop site"
+package = "Migration"
+backdrop = 1.x
+type = module
+
+dependencies[] = migrate_d2b
+dependencies[] = migrate_ui
+
+files[] = migrate_d2b_ui.migrate.inc

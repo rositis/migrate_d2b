@@ -20,7 +20,7 @@
  * default_language - Default language for the node and node body. Defaults
  *   to LANGUAGE_NONE.
  */
-abstract class BackdropEntityMigration extends BackdropMigration {
+abstract class DrupalEntityMigration extends DrupalMigration {
   /**
    * The source node type.
    *

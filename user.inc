@@ -8,7 +8,7 @@
  * Base class for all user migrations - handles commonalities across all
  * supported source Drupal versions.
  */
-abstract class BackdropUserMigration extends BackdropMigration {
+abstract class DrupalUserMigration extends DrupalMigration {
   /**
    * If there's a user picture migration, keep track of the machine name
    * for dependency management and sourceMigration.

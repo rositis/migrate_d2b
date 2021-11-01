@@ -8,7 +8,7 @@
  * Base class for all variables migrations - handles commonalities across
  * all supported source Drupal versions.
  */
-abstract class DrupalVariableMigration extends BackdropMigration {
+abstract class DrupalVariableMigration extends DrupalMigration {
 
   /**
    * @param array $arguments

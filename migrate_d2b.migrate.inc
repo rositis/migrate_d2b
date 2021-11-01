@@ -4,7 +4,7 @@
  * Base classes for all Backdrop-to-Backdrop migration classes.
  */
 
-abstract class BackdropMigration extends Migration {
+abstract class DrupalMigration extends Migration {
   /**
    * Connection key for the DatabaseConnection holding the source Backdrop
    * installation.

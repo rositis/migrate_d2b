@@ -1,6 +1,6 @@
 <?php
 /**
- * @file migrate_d2d_example.migrate.inc
+ * @file migrate_d2b_example.migrate.inc
  */
 
 /**
@@ -12,7 +12,8 @@
 /**
  * Implements hook_migrate_api().
  */
-function migrate_d2d_example_migrate_api() {
+function migrate_d2b_example_migrate_api(): array
+{
   /**
    * Declare the api version and migration group.
    */
@@ -20,7 +21,7 @@ function migrate_d2d_example_migrate_api() {
     'api' => 2,
     'groups' => array(
       'example_group' => array(
-        'title' => t('Backdrop 6 to Backdrop 7 example migrations.'),
+        'title' => t('Drupal 6 to Backdrop example migrations.'),
       ),
       'migrations' => array(),
     ),
@@ -30,7 +31,7 @@ function migrate_d2d_example_migrate_api() {
    * Each migration being registered takes an array of arguments, some required
    * and some optional. Start with the common arguments required by all - the
    * source_connection (connection key, set up in settings.php, pointing to
-   * the Backdrop 6 database), source_version (major version of Backdrop), and
+   * the Drupal 6 database), source_version (major version of Backdrop), and
    * group_name (a.k.a. import job).
    */
   $common_arguments = array(
@@ -42,21 +43,21 @@ function migrate_d2d_example_migrate_api() {
   // Register the user migration.
   // We just use the migrate_d2b D6 migration class as-is.
   $api['migrations']['User'] = $common_arguments + array(
-    'description' => t('Migration of users from Backdrop 6'),
-    'class_name' => 'BackdropUser6Migration',
+    'description' => t('Migration of users from Drupal 6'),
+    'class_name' => 'DrupalUser6Migration',
   );
 
   // For vocabulary migrations, source_vocabulary and destination_vocabulary are
-  // required arguments. Note that in Backdrop 6 vocabularies did not have machine
+  // required arguments. Note that in Drupal 6 vocabularies did not have machine
   // names, so we use the vocabulary ID to uniquely identify them.
   $vocabulary_arguments = array(
     'Countries' => array(
-      'description' => t('Migration of Countries terms from Backdrop 6'),
+      'description' => t('Migration of Countries terms from Drupal 6'),
       'source_vocabulary' => '1', // D6 Vocabulary ID
       'destination_vocabulary' => 'countries',
     ),
     'Topics' => array(
-      'description' => t('Migration of Topics terms from Backdrop 6'),
+      'description' => t('Migration of Topics terms from Drupal 6'),
       'source_vocabulary' => '2', // D6 Vocabulary ID
       'destination_vocabulary' => 'topics',
     ),
@@ -67,7 +68,7 @@ function migrate_d2d_example_migrate_api() {
   // first, we want to make sure it's listed first so the vocabularies are
   // listed right ahead of the node migrations.
   $common_vocabulary_arguments = $common_arguments + array(
-    'class_name' => 'BackdropTerm6Migration',
+    'class_name' => 'DrupalTerm6Migration',
     'soft_dependencies' => array('User'),
   );
   foreach ($vocabulary_arguments as $migration_name => $arguments) {
@@ -81,13 +82,13 @@ function migrate_d2d_example_migrate_api() {
   $node_arguments = array(
     'Image' => array(
       'class_name' => 'ExampleImageMigration',
-      'description' => t('Migration of image nodes from Backdrop 6'),
+      'description' => t('Migration of image nodes from Drupal 6'),
       'source_type' => 'image',
       'destination_type' => 'image',
     ),
     'Article' => array(
       'class_name' => 'ExampleArticleMigration',
-      'description' => t('Migration of article nodes from Backdrop 6'),
+      'description' => t('Migration of article nodes from Drupal 6'),
       'source_type' => 'my_article',
       'destination_type' => 'new_article',
       'dependencies' => array('Image', 'Countries', 'Topics'),
@@ -107,7 +108,7 @@ function migrate_d2d_example_migrate_api() {
 
   // Menu migrations -- same requirements as users
   $menu_arguments = $common_arguments + array(
-    'description' => t('Migration of menus from Backdrop 6'),
+    'description' => t('Migration of menus from Drupal 6'),
     'class_name' => 'BackdropMenu6Migration',
   );
 
@@ -116,7 +117,7 @@ function migrate_d2d_example_migrate_api() {
 
   // Menu links migrations -- basic requirements, plus must set up menu dependency
   $menu_links_arguments = $common_arguments + array(
-    'description' => t('Migration of menu links from Backdrop 6'),
+    'description' => t('Migration of menu links from Drupal 6'),
     'class_name' => 'BackdropMenuLinks6Migration',
     'menu_migration' => 'Menu',
   );
